@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tanggal_post = $_POST['tanggal'] ?? $hari_ini;
 
     if (!csrf_valid($token, 'csrf_token_catatan')) {
-        $_SESSION['pesan_catatan'] = 'Sesi formulir kedaluwarsa. Muat ulang halaman lalu coba lagi.';
+        $_SESSION['pesan_catatan'] = 'Sesi formulir kedaluwarsaa. Muat ulang halaman lalu coba lagi.';
         $_SESSION['pesan_catatan_tipe'] = 'error';
     } elseif (!tanggal_valid($tanggal_post) || $tanggal_post > $tanggal_maks_lihat) {
         $tanggal_post = $hari_ini;
