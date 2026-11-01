@@ -1,6 +1,15 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/config/koneksi.php';
 wajib_login();
+
+// Jika admin atau pakar mengakses dashboard pengguna, arahkan langsung ke portalnya masing-masing
+if (($_SESSION['role'] ?? '') === 'admin') {
+    header('Location: ' . base_url('admin/index.php'));
+    exit;
+} elseif (($_SESSION['role'] ?? '') === 'pakar') {
+    header('Location: ' . base_url('pakar/index.php'));
+    exit;
+}
 
 $uid = $_SESSION['user_id'];
 $hari_ini = date('Y-m-d');

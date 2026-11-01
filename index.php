@@ -39,7 +39,6 @@ $url_dashboard = match($role) {
         <a href="<?= htmlspecialchars($url_dashboard) ?>">Dashboard</a>
         <a class="tombol kecil" href="<?= base_url('logout.php') ?>">Keluar</a>
       <?php else: ?>
-        <a href="<?= base_url('login.php') ?>">Masuk</a>
         <a class="tombol kecil" href="<?= base_url('register.php') ?>">Daftar Akun</a>
       <?php endif; ?>
     </div>

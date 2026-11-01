@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/config/koneksi.php';
 wajib_login();
 
@@ -363,6 +363,42 @@ $total_hal  = (int)ceil($total_menu / $per_hal);
 $halaman    = min($halaman, max(1, $total_hal));
 $menu_tampil = array_slice($menu, ($halaman - 1) * $per_hal, $per_hal);
 
+// Ambil rincian komponen takaran untuk menu yang sedang tampil di halaman ini
+$ids_tampil = array_column($menu_tampil, 'id');
+$komponen_per_menu = [];
+if (!empty($ids_tampil)) {
+    try {
+        $in_clause = implode(',', array_fill(0, count($ids_tampil), '?'));
+        $st_komp = $pdo->prepare("SELECT * FROM menu_komponen WHERE menu_id IN ($in_clause) ORDER BY id ASC");
+        $st_komp->execute($ids_tampil);
+        while ($row = $st_komp->fetch()) {
+            $komponen_per_menu[$row['menu_id']][] = $row;
+        }
+    } catch (Exception $e) {
+        $komponen_per_menu = [];
+    }
+}
+
+// Data terstruktur untuk modal takaran interaktif
+$data_takaran_json = [];
+foreach ($menu_tampil as $m) {
+    $mid = (int)$m['id'];
+    $data_takaran_json[$mid] = [
+        'id'          => $mid,
+        'nama'        => $m['nama_menu'],
+        'waktu'       => ucfirst($m['waktu_makan']),
+        'waktu_raw'   => $m['waktu_makan'],
+        'deskripsi'   => $m['deskripsi'] ?? '',
+        'kalori'      => (int)$m['kalori'],
+        'berat'       => !empty($m['berat_gram']) ? (int)$m['berat_gram'] : 0,
+        'harga'       => rp($m['harga']),
+        'harga_raw'   => (int)$m['harga'],
+        'takaran'     => $m['takaran_saji'] ?? '',
+        'vegetarian'  => !empty($m['vegetarian']),
+        'komponen'    => $komponen_per_menu[$mid] ?? []
+    ];
+}
+
 $judul = 'Menu Rekomendasi';
 include BASE_DIR . 'includes/header.php';
 ?>
@@ -617,36 +653,49 @@ include BASE_DIR . 'includes/header.php';
       <!-- Grid Menu Makanan dengan Kategori Sesuai Waktu Makan -->
       <div class="daftar-menu">
         <?php foreach ($menu_tampil as $m): ?>
-          <article class="menu-kartu">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px">
-              <span class="badge-waktu badge-waktu-<?= h($m['waktu_makan']) ?>">
-                <?= $ikon_waktu[$m['waktu_makan']] ?? '' ?> <?= h(ucfirst($m['waktu_makan'])) ?>
-              </span>
-              <?php if ($m['vegetarian']): ?>
-                <span class="badge kategori-normal" style="font-size:.72rem;padding:2px 8px">Vegetarian</span>
-              <?php endif; ?>
+          <article class="menu-kartu" style="display:flex; flex-direction:column; justify-content:space-between; height:100%;">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:6px">
+                <span class="badge-waktu badge-waktu-<?= h($m['waktu_makan']) ?>">
+                  <?= $ikon_waktu[$m['waktu_makan']] ?? '' ?> <?= h(ucfirst($m['waktu_makan'])) ?>
+                </span>
+                <?php if ($m['vegetarian']): ?>
+                  <span class="badge kategori-normal" style="font-size:.72rem;padding:2px 8px">Vegetarian</span>
+                <?php endif; ?>
+              </div>
+              <h3 style="margin: 0 0 6px; font-size: 1.08rem; line-height: 1.35;"><?= h($m['nama_menu']) ?></h3>
+              <p class="teks-redup" style="font-size:0.85rem; margin:0 0 14px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;"><?= h($m['deskripsi']) ?></p>
             </div>
-            <h3><?= h($m['nama_menu']) ?></h3>
-            <p><?= h($m['deskripsi']) ?></p>
-            <div class="menu-info">
-              <b><?= (int)$m['kalori'] ?> kkal</b>
-              <span><?= rp($m['harga']) ?></span>
-            </div>
-            <!-- Tombol Pilih & Catat Manual -->
-            <form method="post" style="margin-top: 12px; display: flex; gap: 6px; align-items: center;">
-              <input type="hidden" name="aksi" value="catat_manual">
-              <input type="hidden" name="csrf_token" value="<?= h($csrf_token) ?>">
-              <input type="hidden" name="menu_id" value="<?= (int)$m['id'] ?>">
-              <select name="porsi" class="menu-porsi" style="height: 34px; padding: 2px 8px; font-size: 0.8rem; margin: 0; flex: 1;">
-                <option value="0.5">&frac12; porsi</option>
-                <option value="1" selected>1 porsi</option>
-                <option value="1.5">1,5 porsi</option>
-                <option value="2">2 porsi</option>
-              </select>
-              <button type="submit" class="tombol kecil" style="padding: 0 12px; height: 34px; font-size: 0.8rem; margin: 0; white-space: nowrap;">
-                + Catat Makan
+
+            <div style="margin-top:auto;">
+              <div class="menu-info" style="margin-bottom:8px;">
+                <b><?= (int)$m['kalori'] ?> kkal <?= !empty($m['berat_gram']) ? '<span style="font-size:0.8rem; font-weight:500; color:var(--abu);">(' . (int)$m['berat_gram'] . 'g)</span>' : '' ?></b>
+                <span><?= rp($m['harga']) ?></span>
+              </div>
+
+              <!-- Tombol Rapi untuk Melihat Rincian Takaran -->
+              <button type="button" class="tombol sekunder kecil"
+                      onclick="bukaModalTakaran(<?= (int)$m['id'] ?>, parseFloat(this.closest('article').querySelector('select.menu-porsi').value))"
+                      style="width:100%; margin-bottom:8px; font-size:0.78rem; padding:6px 10px; font-weight:600; background:var(--latar); border:1px solid var(--garis); cursor:pointer;">
+                Lihat Takaran
               </button>
-            </form>
+
+              <!-- Tombol Pilih & Catat Manual -->
+              <form method="post" style="display: flex; gap: 6px; align-items: center; margin:0;">
+                <input type="hidden" name="aksi" value="catat_manual">
+                <input type="hidden" name="csrf_token" value="<?= h($csrf_token) ?>">
+                <input type="hidden" name="menu_id" value="<?= (int)$m['id'] ?>">
+                <select name="porsi" class="menu-porsi" style="height: 34px; padding: 2px 8px; font-size: 0.8rem; margin: 0; flex: 1;">
+                  <option value="0.5">&frac12; porsi</option>
+                  <option value="1" selected>1 porsi</option>
+                  <option value="1.5">1,5 porsi</option>
+                  <option value="2">2 porsi</option>
+                </select>
+                <button type="submit" class="tombol kecil" style="padding: 0 12px; height: 34px; font-size: 0.8rem; margin: 0; white-space: nowrap;">
+                  + Catat Makan
+                </button>
+              </form>
+            </div>
           </article>
         <?php endforeach; ?>
       </div>
@@ -673,9 +722,19 @@ include BASE_DIR . 'includes/header.php';
                     <?= $ikon_waktu[$m['waktu_makan']] ?? '' ?> <?= h(ucfirst($m['waktu_makan'])) ?>
                   </span>
                 </td>
-                <td><strong><?= h($m['nama_menu']) ?></strong></td>
+                <td>
+                  <strong><?= h($m['nama_menu']) ?></strong>
+                  <div>
+                    <button type="button" class="tombol sekunder kecil" onclick="bukaModalTakaran(<?= (int)$m['id'] ?>, parseFloat(this.closest('tr').querySelector('select.menu-porsi').value))" style="padding:2px 8px; font-size:0.72rem; margin-top:4px;">
+                      Lihat Takaran
+                    </button>
+                  </div>
+                </td>
                 <td class="teks-redup" style="font-size:.85em"><?= h($m['deskripsi']) ?></td>
-                <td style="text-align:right;white-space:nowrap"><?= (int)$m['kalori'] ?> kkal</td>
+                <td style="text-align:right;white-space:nowrap">
+                  <b><?= (int)$m['kalori'] ?> kkal</b>
+                  <?= !empty($m['berat_gram']) ? '<br><small class="teks-redup">' . (int)$m['berat_gram'] . 'g</small>' : '' ?>
+                </td>
                 <td style="text-align:right;white-space:nowrap"><?= rp($m['harga']) ?></td>
                 <td><?= $m['vegetarian'] ? '<span class="badge kategori-normal" style="font-size:.75em">Veg</span>' : '' ?></td>
                 <td style="text-align:center">
@@ -706,7 +765,7 @@ include BASE_DIR . 'includes/header.php';
         <?php
         $params_nav_hal = $params_nav + ['tampilan' => $tampilan];
         if ($halaman > 1): ?>
-          <a class="tombol tombol-sekunder kecil" href="?<?= h(http_build_query($params_nav_hal + ['hal' => $halaman - 1])) ?>"&larr; Sebelumnya</a>
+          <a class="tombol tombol-sekunder kecil" href="?<?= h(http_build_query($params_nav_hal + ['hal' => $halaman - 1])) ?>">&larr; Sebelumnya</a>
         <?php endif;
         $start = max(1, $halaman - 2);
         $end   = min($total_hal, $halaman + 2);
@@ -714,7 +773,7 @@ include BASE_DIR . 'includes/header.php';
           <a class="tombol <?= $p === $halaman ? '' : 'tombol-sekunder' ?> kecil" href="?<?= h(http_build_query($params_nav_hal + ['hal' => $p])) ?>"><?= $p ?></a>
         <?php endfor;
         if ($halaman < $total_hal): ?>
-          <a class="tombol tombol-sekunder kecil" href="?<?= h(http_build_query($params_nav_hal + ['hal' => $halaman + 1])) ?>">Berikutnya &rarr;/a>
+          <a class="tombol tombol-sekunder kecil" href="?<?= h(http_build_query($params_nav_hal + ['hal' => $halaman + 1])) ?>">Berikutnya &rarr;</a>
         <?php endif; ?>
       </nav>
     <?php endif; ?>
@@ -725,6 +784,236 @@ include BASE_DIR . 'includes/header.php';
 
   <p class="catatan">Kalori merupakan perkiraan per porsi standar dan bersifat edukatif, bukan pengganti saran ahli gizi.</p>
 <?php endif; ?>
+
+<!-- MODAL DETAIL TAKARAN & KOMPOSISI BAHAN -->
+<div id="modal-takaran-menu" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(2px);">
+  <div style="background:var(--permukaan); border-radius:var(--radius-kartu); padding:26px; max-width:580px; width:100%; box-shadow:0 24px 60px rgba(0,0,0,0.25); border:1px solid var(--garis); max-height:90vh; overflow-y:auto;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; gap:12px;">
+      <div>
+        <span id="modal-badge-waktu" class="badge-waktu" style="margin-bottom:6px; display:inline-block;"></span>
+        <h3 id="modal-nama-menu" style="margin:0; font-size:1.25rem; font-weight:800; color:var(--gelap);"></h3>
+        <p id="modal-deskripsi-menu" class="teks-redup" style="margin:4px 0 0; font-size:0.86rem; line-height:1.4;"></p>
+      </div>
+      <button type="button" onclick="tutupModalTakaran()" style="background:none; border:none; font-size:1.6rem; line-height:1; color:var(--teks-redup); cursor:pointer; padding:2px 6px;" aria-label="Tutup">&times;</button>
+    </div>
+
+    <!-- Pilih Porsi di Modal -->
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; background:var(--latar); border:1px solid var(--garis); border-radius:var(--radius-kecil); padding:10px 14px;">
+      <label for="modal-pilih-porsi" style="font-size:0.82rem; font-weight:700; color:var(--gelap); white-space:nowrap;">Lihat takaran untuk:</label>
+      <select id="modal-pilih-porsi" onchange="renderModalPorsi()" style="flex:1; height:34px; padding:2px 10px; font-size:0.85rem; border:1px solid var(--garis); border-radius:var(--radius-kecil); background:var(--permukaan); cursor:pointer;">
+        <option value="0.5">&frac12; porsi</option>
+        <option value="1" selected>1 porsi (standar)</option>
+        <option value="1.5">1&frac12; porsi</option>
+        <option value="2">2 porsi</option>
+      </select>
+    </div>
+
+    <!-- Ringkasan Gizi & Porsi (dinamis) -->
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:16px; background:var(--latar); padding:12px; border-radius:var(--radius-kecil); border:1px solid var(--garis); text-align:center;">
+      <div>
+        <div class="teks-redup" style="font-size:0.72rem; font-weight:700; text-transform:uppercase;">Kalori</div>
+        <div id="modal-kalori-menu" style="font-size:1.15rem; font-weight:800; color:var(--hijau); margin-top:2px;"></div>
+      </div>
+      <div>
+        <div class="teks-redup" style="font-size:0.72rem; font-weight:700; text-transform:uppercase;">Total Berat</div>
+        <div id="modal-berat-menu" style="font-size:1.15rem; font-weight:800; color:var(--gelap); margin-top:2px;"></div>
+      </div>
+      <div>
+        <div class="teks-redup" style="font-size:0.72rem; font-weight:700; text-transform:uppercase;">Perkiraan Harga</div>
+        <div id="modal-harga-menu" style="font-size:1.15rem; font-weight:800; color:var(--abu); margin-top:2px;"></div>
+      </div>
+    </div>
+
+    <!-- Kotak Ringkasan Takaran (dinamis) -->
+    <div style="margin-bottom:16px; background:var(--latar); border:1px solid var(--garis); padding:12px 14px; border-radius:var(--radius-kecil);">
+      <div id="modal-takaran-label" style="font-size:0.72rem; font-weight:700; color:var(--abu); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px;">Takaran 1 Porsi Standar:</div>
+      <div id="modal-takaran-teks" style="font-size:0.9rem; font-weight:600; color:var(--gelap); line-height:1.45;"></div>
+    </div>
+
+    <!-- Rincian Komponen Bahan (dinamis) -->
+    <div id="modal-komponen-area" style="margin-bottom:16px;">
+      <div style="font-size:0.78rem; font-weight:700; color:var(--gelap); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.04em;">Komposisi &amp; Rincian Bahan:</div>
+      <div style="overflow-x:auto;">
+        <table class="tabel" style="width:100%; font-size:0.82rem; margin:0;">
+          <thead>
+            <tr style="background:var(--latar);">
+              <th style="padding:6px 10px;">Komponen</th>
+              <th style="padding:6px 10px;">Takaran</th>
+              <th style="padding:6px 10px; text-align:right;">Berat</th>
+              <th style="padding:6px 10px;">Kondisi</th>
+              <th style="padding:6px 10px; text-align:right;">Kalori</th>
+            </tr>
+          </thead>
+          <tbody id="modal-komponen-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end;">
+      <button type="button" onclick="tutupModalTakaran()" class="tombol sekunder kecil" style="padding:7px 22px;">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const daftarTakaran = <?= json_encode($data_takaran_json ?? [], JSON_UNESCAPED_UNICODE) ?>;
+  let modalMenuAktif = null;
+
+  // Format angka: hilangkan desimal nol (mis 300.0 -> "300", 97.5 -> "97,5")
+  function fmtAngka(n) {
+    if (n % 1 === 0) return Math.round(n).toString();
+    return n.toFixed(1).replace('.', ',');
+  }
+
+  // Format rupiah dengan pemisah ribuan
+  function fmtRupiah(n) {
+    return 'Rp' + Math.round(n).toLocaleString('id-ID');
+  }
+
+  // Label teks untuk porsi
+  function labelPorsi(p) {
+    if (p === 0.5)  return '\u00BD porsi';
+    if (p === 1)    return '1 porsi (standar)';
+    if (p === 1.5)  return '1\u00BD porsi';
+    if (p === 2)    return '2 porsi';
+    return p + ' porsi';
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Skala angka gram dalam kurung: "(185g)" -> "(370g)"
+  function skalaGram(teks, porsi) {
+    return teks.replace(/\((\d+(?:[.,]\d+)?)g\)/g, (match, angka) => {
+      const n = parseFloat(angka.replace(',', '.'));
+      return '(' + fmtAngka(n * porsi) + 'g)';
+    });
+  }
+
+  // Skala angka sebelum satuan: "1 piring" -> "2 piring", "2,5 lembar" -> "5 lembar"
+  function skalaSatuan(teks, porsi) {
+    const satuan = 'piring|mangkuk|porsi|butir|potong|gelas|lembar|buah|sdm|sendok|ekor|bungkus|sachet';
+    return teks.replace(
+      new RegExp('(\\d+(?:[,.]\\d+)?)\\s(' + satuan + ')', 'g'),
+      (match, angka, sat) => {
+        const n = parseFloat(angka.replace(',', '.'));
+        return fmtAngka(n * porsi) + ' ' + sat;
+      }
+    );
+  }
+
+  function skalakanTakaranTeks(teks, porsi, beratTotal) {
+    if (!teks) {
+      return beratTotal > 0
+        ? labelPorsi(porsi) + ' (' + Math.round(beratTotal * porsi) + 'g)'
+        : labelPorsi(porsi);
+    }
+    let hasil = skalaGram(teks, porsi);
+    hasil = skalaSatuan(hasil, porsi);
+    return hasil;
+  }
+
+  function renderModalPorsi() {
+    if (!modalMenuAktif) return;
+    const item   = daftarTakaran[modalMenuAktif];
+    if (!item) return;
+
+    const porsi  = parseFloat(document.getElementById('modal-pilih-porsi').value);
+
+    // Kalori, berat, harga
+    const kalori = Math.round(item.kalori * porsi);
+    const berat  = item.berat > 0 ? Math.round(item.berat * porsi) : 0;
+    const harga  = item.harga_raw * porsi;
+
+    document.getElementById('modal-kalori-menu').textContent = kalori + ' kkal';
+    document.getElementById('modal-berat-menu').textContent  = berat  > 0 ? berat + 'g' : '-';
+    document.getElementById('modal-harga-menu').textContent  = fmtRupiah(harga);
+
+    // Label takaran
+    document.getElementById('modal-takaran-label').textContent =
+      'Takaran ' + labelPorsi(porsi) + ':';
+
+    // Teks takaran deskriptif
+    document.getElementById('modal-takaran-teks').textContent =
+      skalakanTakaranTeks(item.takaran, porsi, item.berat);
+
+    // Tabel komponen
+    const tbody = document.getElementById('modal-komponen-tbody');
+    tbody.innerHTML = '';
+
+    if (item.komponen && item.komponen.length > 0) {
+      document.getElementById('modal-komponen-area').style.display = 'block';
+      item.komponen.forEach(k => {
+        const beratK  = parseFloat(k.berat_gram)      > 0 ? parseFloat(k.berat_gram)      * porsi : 0;
+        const kaloriK = parseFloat(k.kalori_komponen) > 0 ? parseFloat(k.kalori_komponen) * porsi : 0;
+
+        const gramStr   = beratK  > 0 ? fmtAngka(beratK)  + 'g'     : '-';
+        const kaloriStr = kaloriK > 0 ? fmtAngka(kaloriK) + ' kkal' : '-';
+
+        // Skala teks takaran komponen
+        let takaranK = k.takaran || '-';
+        if (porsi !== 1 && takaranK !== '-') {
+          takaranK = skalaGram(takaranK, porsi);
+          takaranK = skalaSatuan(takaranK, porsi);
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="padding:6px 10px;"><strong>${escapeHtml(k.nama_komponen)}</strong></td>
+          <td style="padding:6px 10px;">${escapeHtml(takaranK)}</td>
+          <td style="padding:6px 10px; text-align:right;">${gramStr}</td>
+          <td style="padding:6px 10px;"><span class="teks-redup">${escapeHtml(k.kondisi || '-')}</span></td>
+          <td style="padding:6px 10px; text-align:right; font-weight:700; color:var(--hijau);">${kaloriStr}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } else {
+      document.getElementById('modal-komponen-area').style.display = 'none';
+    }
+  }
+
+  function bukaModalTakaran(id, porsiAwal) {
+    const item = daftarTakaran[id];
+    if (!item) return;
+
+    modalMenuAktif = id;
+
+    // Set header (statis)
+    document.getElementById('modal-nama-menu').textContent      = item.nama;
+    document.getElementById('modal-deskripsi-menu').textContent = item.deskripsi;
+    const badgeWaktu = document.getElementById('modal-badge-waktu');
+    badgeWaktu.className   = 'badge-waktu badge-waktu-' + item.waktu_raw;
+    badgeWaktu.textContent = item.waktu;
+
+    // Set porsi awal pada selector modal (sinkron dengan kartu)
+    const porsiValid = [0.5, 1, 1.5, 2];
+    const porsi = porsiValid.includes(porsiAwal) ? porsiAwal : 1;
+    document.getElementById('modal-pilih-porsi').value = porsi;
+
+    // Render semua isi modal
+    renderModalPorsi();
+
+    document.getElementById('modal-takaran-menu').style.display = 'flex';
+  }
+
+  function tutupModalTakaran() {
+    const modal = document.getElementById('modal-takaran-menu');
+    if (modal) modal.style.display = 'none';
+    modalMenuAktif = null;
+  }
+
+  window.addEventListener('click', function(e) {
+    const modal = document.getElementById('modal-takaran-menu');
+    if (e.target === modal) tutupModalTakaran();
+  });
+
+  window.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') tutupModalTakaran();
+  });
+</script>
 
 <?php include BASE_DIR . 'includes/footer.php'; ?>
 

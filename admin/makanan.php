@@ -56,6 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nama_menu   = trim($_POST['nama_menu'] ?? '');
         $waktu_makan = $_POST['waktu_makan'] ?? 'pagi';
         $kalori      = (int)($_POST['kalori'] ?? 0);
+        $berat_gram  = !empty($_POST['berat_gram']) ? (int)$_POST['berat_gram'] : null;
+        $takaran_saji = trim($_POST['takaran_saji'] ?? '');
         $harga       = (int)($_POST['harga'] ?? 0);
         $vegetarian  = isset($_POST['vegetarian']) ? 1 : 0;
         $deskripsi   = trim($_POST['deskripsi'] ?? '');
@@ -82,10 +84,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // UPDATE
                     $st_up = $pdo->prepare("
                         UPDATE menu_diet
-                        SET nama_menu = ?, waktu_makan = ?, kalori = ?, harga = ?, vegetarian = ?, deskripsi = ?
+                        SET nama_menu = ?, waktu_makan = ?, kalori = ?, berat_gram = ?, takaran_saji = ?, harga = ?, vegetarian = ?, deskripsi = ?
                         WHERE id = ?
                     ");
-                    $st_up->execute([$nama_menu, $waktu_makan, $kalori, $harga, $vegetarian, $deskripsi, $id_menu]);
+                    $st_up->execute([$nama_menu, $waktu_makan, $kalori, $berat_gram, $takaran_saji, $harga, $vegetarian, $deskripsi, $id_menu]);
 
                     // Hapus asosiasi lama dan perbarui
                     $del_kat = $pdo->prepare("DELETE FROM menu_kategori WHERE menu_id = ?");
@@ -95,10 +97,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     // INSERT
                     $st_in = $pdo->prepare("
-                        INSERT INTO menu_diet (nama_menu, waktu_makan, kalori, harga, vegetarian, deskripsi)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        INSERT INTO menu_diet (nama_menu, waktu_makan, kalori, berat_gram, takaran_saji, harga, vegetarian, deskripsi)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     ");
-                    $st_in->execute([$nama_menu, $waktu_makan, $kalori, $harga, $vegetarian, $deskripsi]);
+                    $st_in->execute([$nama_menu, $waktu_makan, $kalori, $berat_gram, $takaran_saji, $harga, $vegetarian, $deskripsi]);
                     $target_id = (int)$pdo->lastInsertId();
                     $_SESSION['pesan_admin'] = 'Menu makanan baru berhasil ditambahkan.';
                 }
@@ -226,6 +228,17 @@ include BASE_DIR . 'includes/header.php';
         </div>
       </div>
 
+      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 14px;">
+        <div>
+          <label for="berat_gram">Total Berat (Gram)</label>
+          <input type="number" id="berat_gram" name="berat_gram" value="<?= h($item_edit['berat_gram'] ?? '') ?>" min="0" max="3000" placeholder="Contoh: 250">
+        </div>
+        <div>
+          <label for="takaran_saji">Takaran Porsi Standar</label>
+          <input type="text" id="takaran_saji" name="takaran_saji" value="<?= h($item_edit['takaran_saji'] ?? '') ?>" placeholder="Contoh: 1 piring (185g) + 1 butir telur (65g)">
+        </div>
+      </div>
+
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
         <div>
           <label for="harga">Perkiraan Harga (Rp)</label>
@@ -315,6 +328,11 @@ include BASE_DIR . 'includes/header.php';
                     <span class="badge" style="background: #E8F5E9; color: #2E7D32; font-size: 0.75rem; border: 1px solid #C8E6C9;">Vegetarian</span>
                   <?php endif; ?>
                 </div>
+                <?php if (!empty($m['takaran_saji'])): ?>
+                  <div style="font-size: 0.8rem; color: var(--abu); margin-top: 4px;">
+                    <strong>Porsi:</strong> <?= h($m['takaran_saji']) ?>
+                  </div>
+                <?php endif; ?>
               </div>
 
               <!-- AKSI EDIT & HAPUS -->

@@ -7,7 +7,7 @@ $db   = 'calorie_lab';
 $user = 'root';   
 $pass = '';       
 
-if (session_status() === PHP_SESSION_NONE) {
+if (session_status() === PHP_SESSION_NONE && php_sapi_name() !== 'cli') {
     session_start();
 }
 
@@ -63,13 +63,32 @@ function wajib_admin() {
 }
 
 function wajib_pakar() {
+    global $pdo;
     if (!isset($_SESSION['user_id'])) {
-        header('Location: ' . base_url('pakar/login.php'));
+        header('Location: ' . base_url('login.php'));
         exit;
     }
     if (!in_array($_SESSION['role'] ?? '', ['pakar', 'admin'], true)) {
         header('Location: ' . base_url('dashboard.php'));
         exit;
+    }
+    // Untuk role pakar, verifikasi status_akun dari DB
+    if ($_SESSION['role'] === 'pakar') {
+        try {
+            $st = $pdo->prepare("SELECT status_akun, catatan_admin FROM users WHERE id = ?");
+            $st->execute([$_SESSION['user_id']]);
+            $u = $st->fetch();
+            if (!$u || $u['status_akun'] !== 'aktif') {
+                session_destroy();
+                $pesan = 'Akun Anda belum aktif atau akses telah dicabut. Hubungi administrator.';
+                session_start();
+                $_SESSION['pesan'] = $pesan;
+                header('Location: ' . base_url('login.php'));
+                exit;
+            }
+        } catch (Exception $e) {
+            // Kolom belum ada — lewatkan pengecekan ini
+        }
     }
 }
 

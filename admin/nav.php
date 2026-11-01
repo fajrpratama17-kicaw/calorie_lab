@@ -27,5 +27,18 @@ $admin_halaman = basename($_SERVER['PHP_SELF'] ?? '');
     <a href="<?= base_url('admin/pengguna.php') ?>" class="kategori-waktu-tab <?= in_array($admin_halaman, ['pengguna.php', 'admin_pengguna.php'], true) ? 'aktif' : '' ?>" style="text-decoration:none;">
       Manajemen Pengguna
     </a>
+    <a href="<?= base_url('admin/verifikasi_pakar.php') ?>" class="kategori-waktu-tab <?= $admin_halaman === 'verifikasi_pakar.php' ? 'aktif' : '' ?>" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+      Verifikasi Pakar
+      <?php
+      // Badge hitung pending
+      try {
+        global $pdo;
+        $n = $pdo->query("SELECT COUNT(*) FROM users WHERE role='pakar' AND status_akun='pending'")->fetchColumn();
+        if ($n > 0): ?>
+          <span style="background:#B45148;color:#fff;border-radius:999px;font-size:0.68rem;font-weight:700;padding:1px 7px;line-height:1.6;"><?= (int)$n ?></span>
+        <?php endif;
+      } catch (Exception $e) {}
+      ?>
+    </a>
   </div>
 </div>
