@@ -2,8 +2,6 @@
 require_once dirname(__DIR__) . '/config/koneksi.php';
 wajib_pakar();
 
-$judul = 'Saran untuk Pengguna - Calorie Lab';
-include BASE_DIR . 'includes/header.php';
 $pakar_id = (int)$_SESSION['user_id'];
 $csrf = csrf_token('csrf_pakar_saran');
 
@@ -103,6 +101,8 @@ $label_kat = [
     'obesitas' => 'Obesitas',
 ];
 
+$judul = 'Saran untuk Pengguna - Calorie Lab';
+include BASE_DIR . 'includes/header.php';
 include __DIR__ . '/nav.php';
 ?>
 

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/config/koneksi.php';
 wajib_login();
 
@@ -176,87 +176,160 @@ $judul = 'Profil dan Perkembangan';
 include BASE_DIR . 'includes/header.php';
 ?>
 
-<h2>Profil dan perkembangan</h2>
+<div class="profil-page-header">
+  <div class="profil-user-card">
+    <div class="profil-avatar">
+      <?= mb_strtoupper(mb_substr($user['nama'], 0, 1)) ?>
+    </div>
+    <div class="profil-user-info">
+      <h2><?= h($user['nama']) ?></h2>
+      <p class="teks-redup"><?= h($user['email']) ?>
+        <?php if ($aktif): ?> &middot; Tinggi <?= nf($aktif['tinggi_cm']) ?> cm &middot; Usia <?= (int)$aktif['usia'] ?> th<?php endif; ?>
+      </p>
+    </div>
+  </div>
+</div>
 
 <?php if ($pesan): ?><div class="alert sukses"><?= h($pesan) ?></div><?php endif; ?>
 <?php if ($error): ?><div class="alert error"><?= h($error) ?></div><?php endif; ?>
 
-<div class="hasil" style="margin-bottom:20px">
-  <small>Data akun</small>
-  <p style="margin-top:6px"><b><?= h($user['nama']) ?></b> &middot; <?= h($user['email']) ?>
-  <?php if ($aktif): ?> &middot; Tinggi <b><?= nf($aktif['tinggi_cm']) ?> cm</b> &middot; Usia <b><?= (int)$aktif['usia'] ?></b><?php endif; ?></p>
-</div>
-
 <?php if (!$aktif): ?>
-  <div class="kosong">
-    Kamu belum punya rencana diet yang aktif, jadi belum ada perkembangan yang bisa dipantau.<br><br>
-    <a class="tombol" href="rencana.php">Buat rencana diet</a>
+  <div class="kosong-state">
+    <div class="kosong-state-ikon">📊</div>
+    <h3>Belum ada rencana aktif</h3>
+    <p>Kamu belum punya rencana diet yang aktif, jadi belum ada perkembangan yang bisa dipantau.</p>
+    <a class="tombol" href="rencana.php">Buat rencana diet &rarr;</a>
   </div>
 
 <?php else: ?>
-  <p class="teks-redup">
-    <?= h($label[$aktif['tujuan']]) ?> &middot; hari ke-<?= $hari_ke ?> dari <?= $durasi ?> hari &middot;
-    <span class="badge" style="background:<?= h($status[1]) ?>"><?= h($status[0]) ?></span>
-  </p>
+  <!-- Status rencana -->
+  <div class="profil-status-bar">
+    <div class="profil-status-label">
+      <span class="profil-status-tujuan"><?= h($label[$aktif['tujuan']]) ?></span>
+      <span class="teks-redup" style="font-size:0.85rem;">Hari ke-<?= $hari_ke ?> dari <?= $durasi ?> hari</span>
+    </div>
+    <span class="badge profil-status-badge" style="background:<?= h($status[1]) ?>"><?= h($status[0]) ?></span>
+  </div>
 
-  <div class="ringkas">
-    <div class="kartu"><small>Berat awal</small><div class="angka-besar"><?= nf($aktif['berat_awal'], 1) ?></div>kg</div>
-    <div class="kartu"><small>Berat sekarang</small><div class="angka-besar"><?= nf($berat_skrg, 1) ?></div>kg</div>
-    <div class="kartu"><small>Berat target</small><div class="angka-besar"><?= nf($aktif['berat_target'], 1) ?></div>kg</div>
-    <div class="kartu"><small>Target kalori harian</small><div class="angka-besar"><?= nf($aktif['target_kalori']) ?></div>kkal</div>
+  <!-- Stat cards berat -->
+  <div class="profil-stat-grid">
+    <div class="profil-stat-card">
+      <div class="profil-stat-ikon">⚖️</div>
+      <div class="profil-stat-isi">
+        <span class="profil-stat-label">Berat Awal</span>
+        <span class="profil-stat-nilai"><?= nf($aktif['berat_awal'], 1) ?> <small>kg</small></span>
+      </div>
+    </div>
+    <div class="profil-stat-card profil-stat-current">
+      <div class="profil-stat-ikon">📍</div>
+      <div class="profil-stat-isi">
+        <span class="profil-stat-label">Berat Sekarang</span>
+        <span class="profil-stat-nilai"><?= nf($berat_skrg, 1) ?> <small>kg</small></span>
+      </div>
+    </div>
+    <div class="profil-stat-card">
+      <div class="profil-stat-ikon">🎯</div>
+      <div class="profil-stat-isi">
+        <span class="profil-stat-label">Berat Target</span>
+        <span class="profil-stat-nilai"><?= nf($aktif['berat_target'], 1) ?> <small>kg</small></span>
+      </div>
+    </div>
+    <div class="profil-stat-card">
+      <div class="profil-stat-ikon">🔥</div>
+      <div class="profil-stat-isi">
+        <span class="profil-stat-label">Target Kalori</span>
+        <span class="profil-stat-nilai"><?= nf($aktif['target_kalori']) ?> <small>kkal</small></span>
+      </div>
+    </div>
   </div>
 
   <?php if ($aktif['tujuan'] !== 'pertahankan'): ?>
-    <div class="progres"><div class="progres-isi" style="width:<?= $capai ?>%"></div></div>
-    <p class="catatan"><?= $capai ?>% menuju berat target</p>
+    <div class="profil-progress-section">
+      <div class="profil-progress-label">
+        <span>Progres menuju target</span>
+        <strong><?= $capai ?>%</strong>
+      </div>
+      <div class="progres" style="margin-top:6px"><div class="progres-isi" style="width:<?= $capai ?>%"></div></div>
+    </div>
   <?php endif; ?>
 
-  <div class="hasil" style="margin:20px 0">
-    <h3 style="margin-bottom:10px">Grafik berat badan</h3>
-    <canvas id="grafik" height="110"></canvas>
-    <p class="catatan">Garis putus-putus adalah jalur ideal dari berat awal ke target.</p>
-  </div>
+  <div class="profil-two-col">
 
-  <div class="hasil" style="margin-bottom:20px">
-    <h3 style="margin-bottom:6px">Catat berat badan</h3>
-    <form method="post" class="form-tambah">
-      <input type="hidden" name="aksi" value="catat">
-      <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
-      <div style="max-width:180px"><label for="tanggal">Tanggal</label>
-        <input type="date" id="tanggal" name="tanggal" value="<?= h($hari_ini) ?>" max="<?= h($hari_ini) ?>" required></div>
-      <div style="max-width:160px"><label for="berat">Berat (kg)</label>
-        <input type="number" id="berat" name="berat" step="0.1" required></div>
-      <div><label for="catatan">Catatan (opsional)</label>
-        <input type="text" id="catatan" name="catatan" maxlength="255" placeholder="Misalnya: minggu ini banyak lembur"></div>
-      <button type="submit" class="tombol">Simpan</button>
-    </form>
-    <p class="catatan">Menimbanglah seminggu sekali pada hari dan jam yang sama. Kamu dapat mencatat timbangan untuk hari ini maupun tanggal lampau. Setiap catatan baru memperbarui target kalorimu.</p>
-  </div>
+    <!-- Kolom kiri: Grafik + Form catat -->
+    <div class="profil-col-main">
+      <div class="kartu profil-grafik-card">
+        <h3 style="margin-bottom:14px;">📈 Grafik Berat Badan</h3>
+        <canvas id="grafik" height="130"></canvas>
+        <p class="catatan" style="margin-top:10px;">Garis putus-putus adalah jalur ideal dari berat awal ke target.</p>
+      </div>
 
-  <h3 style="margin-bottom:10px">Riwayat berat</h3>
-  <div class="gulir">
-    <table class="tabel">
-      <thead><tr><th>Tanggal</th><th>Berat</th><th>Perubahan</th><th>Catatan</th></tr></thead>
-      <tbody>
-      <?php
-      $sebelum = null;
-      $baris = [];
-      foreach ($catatan as $c) { $baris[] = [$c, $sebelum]; $sebelum = (float)$c['berat_kg']; }
-      if (empty($baris)): ?>
-        <tr><td colspan="4" class="teks-redup" style="text-align:center;padding:16px">Belum ada catatan timbangan pada rencana ini.</td></tr>
-      <?php else:
-        foreach (array_reverse($baris) as [$c, $sb]):
-            $selisih = $sb === null ? null : (float)$c['berat_kg'] - $sb; ?>
-          <tr>
-            <td><?= h(tgl($c['tanggal'])) ?></td>
-            <td><?= nf($c['berat_kg'], 1) ?> kg</td>
-            <td><?= $selisih === null ? '-' : (($selisih > 0 ? '+' : '') . nf($selisih, 1) . ' kg') ?></td>
-            <td><?= h($c['catatan'] ?? '') ?></td>
-          </tr>
-        <?php endforeach;
-      endif; ?>
-      </tbody>
-    </table>
+      <div class="kartu profil-form-card">
+        <h3 style="margin-bottom:4px;">+ Catat Timbangan</h3>
+        <p class="teks-redup" style="font-size:0.85rem; margin-bottom:16px;">Timbang secara rutin 1&times; seminggu pada hari & jam yang sama.</p>
+        <form method="post">
+          <input type="hidden" name="aksi" value="catat">
+          <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
+          <div class="form-row-2">
+            <div>
+              <label for="tanggal">Tanggal</label>
+              <input type="date" id="tanggal" name="tanggal" value="<?= h($hari_ini) ?>" max="<?= h($hari_ini) ?>" required>
+            </div>
+            <div>
+              <label for="berat-profil">Berat (kg)</label>
+              <div class="input-unit-wrapper">
+                <input type="number" id="berat-profil" name="berat" step="0.1" min="20" max="250" placeholder="Contoh: 70.5" required>
+                <span class="unit-suffix">kg</span>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:14px;">
+            <label for="catatan-profil">Catatan <span style="font-weight:400; color:var(--teks-redup)">(opsional)</span></label>
+            <input type="text" id="catatan-profil" name="catatan" maxlength="255" placeholder="Misal: minggu ini banyak olahraga">
+          </div>
+          <button type="submit" class="tombol penuh" style="margin-top:16px;">Simpan catatan berat</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Kolom kanan: Riwayat berat -->
+    <div class="profil-col-side">
+      <div class="kartu profil-riwayat-card">
+        <h3 style="margin-bottom:14px;">📋 Riwayat Timbangan</h3>
+        <?php
+        $sebelum = null;
+        $baris = [];
+        foreach ($catatan as $c) { $baris[] = [$c, $sebelum]; $sebelum = (float)$c['berat_kg']; }
+        if (empty($baris)): ?>
+          <div class="profil-riwayat-kosong">
+            <div style="font-size:2rem; margin-bottom:8px;">⚖️</div>
+            <p>Belum ada catatan timbangan.</p>
+            <p class="teks-redup" style="font-size:0.85rem;">Catat berat badanmu di formulir sebelah kiri.</p>
+          </div>
+        <?php else: ?>
+          <div class="profil-riwayat-list">
+            <?php foreach (array_reverse($baris) as [$c, $sb]):
+              $selisih = $sb === null ? null : (float)$c['berat_kg'] - $sb;
+              $selisih_teks = $selisih === null ? '' : (($selisih > 0 ? '+' : '') . nf($selisih, 1) . ' kg');
+              $selisih_kelas = $selisih === null ? '' : ($selisih < 0 ? 'turun' : ($selisih > 0 ? 'naik' : 'sama'));
+            ?>
+              <div class="profil-riwayat-baris">
+                <div class="profil-riwayat-tanggal"><?= h(tgl($c['tanggal'])) ?></div>
+                <div class="profil-riwayat-berat"><?= nf($c['berat_kg'], 1) ?> kg</div>
+                <?php if ($selisih_teks): ?>
+                  <div class="profil-riwayat-selisih <?= $selisih_kelas ?>"><?= $selisih_teks ?></div>
+                <?php else: ?>
+                  <div class="profil-riwayat-selisih">—</div>
+                <?php endif; ?>
+                <?php if ($c['catatan']): ?>
+                  <div class="profil-riwayat-catatan teks-redup" style="font-size:0.8rem;"><?= h($c['catatan']) ?></div>
+                <?php endif; ?>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </div>
+    </div>
+
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -264,28 +337,36 @@ include BASE_DIR . 'includes/header.php';
     new Chart(document.getElementById('grafik'), {
       type: 'line',
       data: { datasets: [
-        { label: 'Berat kamu (kg)', data: <?= json_encode($titik) ?>, borderColor: '#1F8A5B', backgroundColor: '#1F8A5B', tension: .25, pointRadius: 4 },
+        { label: 'Berat kamu (kg)', data: <?= json_encode($titik) ?>, borderColor: '#1F8A5B', backgroundColor: 'rgba(31,138,91,0.08)', fill: true, tension: .25, pointRadius: 5, pointBackgroundColor: '#1F8A5B' },
         { label: 'Jalur ideal', data: [{x:0, y:<?= (float)$aktif['berat_awal'] ?>}, {x:<?= $durasi ?>, y:<?= (float)$aktif['berat_target'] ?>}],
           borderColor: '#F5C542', borderDash: [6,6], pointRadius: 0 }
       ]},
-      options: { scales: { x: { type: 'linear', min: 0, max: <?= $max_grafik ?>, ticks: { stepSize: 5 }, title: { display: true, text: 'Hari ke-' } },
-                           y: { title: { display: true, text: 'kg' } } } }
+      options: { responsive: true, scales: {
+        x: { type: 'linear', min: 0, max: <?= $max_grafik ?>, ticks: { stepSize: 5 }, title: { display: true, text: 'Hari ke-' } },
+        y: { title: { display: true, text: 'kg' } }
+      }, plugins: { legend: { position: 'bottom', labels: { font: { size: 12 } } } } }
     });
   </script>
 <?php endif; ?>
 
 <?php if ($rencana_lama): ?>
-  <h3 style="margin:24px 0 10px">Rencana sebelumnya</h3>
-  <?php foreach ($rencana_lama as $r): ?>
-    <div class="baris-catatan">
-      <div><b><?= h($label[$r['tujuan']]) ?></b><br>
-        <small><?= h(tgl($r['tanggal_mulai'])) ?> &middot; <?= nf($r['berat_awal'], 1) ?> ke <?= nf($r['berat_target'], 1) ?> kg &middot; <?= (int)$r['durasi_hari'] ?> hari</small></div>
-      <span class="badge" style="background:<?= $r['status'] === 'selesai' ? 'var(--normal)' : '#888' ?>"><?= h(ucfirst($r['status'])) ?></span>
+  <div style="margin-top:32px;">
+    <h3 style="margin-bottom:12px;">Rencana Sebelumnya</h3>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <?php foreach ($rencana_lama as $r): ?>
+        <div class="profil-rencana-lama-baris">
+          <div>
+            <strong><?= h($label[$r['tujuan']]) ?></strong>
+            <div class="teks-redup" style="font-size:0.83rem; margin-top:2px;"><?= h(tgl($r['tanggal_mulai'])) ?> &middot; <?= nf($r['berat_awal'], 1) ?> &rarr; <?= nf($r['berat_target'], 1) ?> kg &middot; <?= (int)$r['durasi_hari'] ?> hari</div>
+          </div>
+          <span class="badge" style="background:<?= $r['status'] === 'selesai' ? 'var(--normal)' : '#888' ?>; flex-shrink:0;"><?= h(ucfirst($r['status'])) ?></span>
+        </div>
+      <?php endforeach; ?>
     </div>
-  <?php endforeach; ?>
+  </div>
 <?php endif; ?>
 
-<p class="catatan">Perhitungan bersifat perkiraan dan edukatif, bukan pengganti saran dokter atau ahli gizi.</p>
+<p class="catatan" style="margin-top:20px;">Perhitungan bersifat perkiraan dan edukatif, bukan pengganti saran dokter atau ahli gizi.</p>
 
 <?php include BASE_DIR . 'includes/footer.php'; ?>
 

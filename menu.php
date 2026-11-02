@@ -9,11 +9,16 @@ if (!function_exists('rp')) {
 if (!function_exists('cari_menu')) {
     function cari_menu($pdo, $kid, $waktu, $harga, $veg, $acak = false, $semua = false) {
         if ($semua) {
-            $sql = 'SELECT DISTINCT m.* FROM menu_diet m WHERE 1=1';
+            $sql = 'SELECT DISTINCT m.*, u.nama AS nama_pakar, u.gelar AS gelar_pakar 
+                    FROM menu_diet m 
+                    LEFT JOIN users u ON u.id = m.pakar_id 
+                    WHERE 1=1';
             $param = [];
         } else {
-            $sql = 'SELECT DISTINCT m.* FROM menu_diet m
+            $sql = 'SELECT DISTINCT m.*, u.nama AS nama_pakar, u.gelar AS gelar_pakar 
+                    FROM menu_diet m
                     JOIN menu_kategori mk ON mk.menu_id = m.id
+                    LEFT JOIN users u ON u.id = m.pakar_id
                     WHERE mk.kategori_id = ?';
             $param = [$kid];
         }
@@ -664,6 +669,14 @@ include BASE_DIR . 'includes/header.php';
                 <?php endif; ?>
               </div>
               <h3 style="margin: 0 0 6px; font-size: 1.08rem; line-height: 1.35;"><?= h($m['nama_menu']) ?></h3>
+              <?php if (!empty($m['nama_pakar'])): ?>
+                <div style="margin-bottom: 8px;">
+                  <span class="badge" style="background: #EAF3EE; color: var(--hijau); font-weight: 700; font-size: 0.7rem; padding: 2px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Disusun oleh <?= h($m['gelar_pakar'] ? $m['gelar_pakar'] . ' ' : '') ?><?= h($m['nama_pakar']) ?>
+                  </span>
+                </div>
+              <?php endif; ?>
               <p class="teks-redup" style="font-size:0.85rem; margin:0 0 14px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;"><?= h($m['deskripsi']) ?></p>
             </div>
 
@@ -724,6 +737,11 @@ include BASE_DIR . 'includes/header.php';
                 </td>
                 <td>
                   <strong><?= h($m['nama_menu']) ?></strong>
+                  <?php if (!empty($m['nama_pakar'])): ?>
+                    <div style="font-size: 0.72rem; color: var(--hijau); font-weight: 700; margin-top: 2px;">
+                      Disusun oleh <?= h($m['gelar_pakar'] ? $m['gelar_pakar'] . ' ' : '') ?><?= h($m['nama_pakar']) ?>
+                    </div>
+                  <?php endif; ?>
                   <div>
                     <button type="button" class="tombol sekunder kecil" onclick="bukaModalTakaran(<?= (int)$m['id'] ?>, parseFloat(this.closest('tr').querySelector('select.menu-porsi').value))" style="padding:2px 8px; font-size:0.72rem; margin-top:4px;">
                       Lihat Takaran

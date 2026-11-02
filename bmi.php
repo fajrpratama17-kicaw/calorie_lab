@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/config/koneksi.php';
 wajib_login();
 
@@ -29,6 +29,26 @@ $st_last = $pdo->prepare('SELECT rb.*, kb.nama AS kat_nama, kb.kode AS kat_kode,
 $st_last->execute([$uid]);
 $riwayat_terakhir = $st_last->fetch();
 
+// Hitung posisi jarum skala BMI visual (rentang klinis 14 - 34)
+$posisi_persen = 0;
+if ($riwayat_terakhir) {
+    $bmi_val = (float)$riwayat_terakhir['bmi'];
+    if ($bmi_val <= 14) {
+        $posisi_persen = 3;
+    } elseif ($bmi_val >= 34) {
+        $posisi_persen = 97;
+    } elseif ($bmi_val < 18.5) {
+        $posisi_persen = 3 + (($bmi_val - 14) / (18.5 - 14)) * 19.5;
+    } elseif ($bmi_val <= 25.0) {
+        $posisi_persen = 22.5 + (($bmi_val - 18.5) / (25.0 - 18.5)) * 32.5;
+    } elseif ($bmi_val <= 27.0) {
+        $posisi_persen = 55 + (($bmi_val - 25.0) / (27.0 - 25.0)) * 10;
+    } else {
+        $posisi_persen = 65 + (($bmi_val - 27.0) / (34 - 27.0)) * 32;
+    }
+    $posisi_persen = round(max(3, min(97, $posisi_persen)), 1);
+}
+
 // â”€â”€ Apakah form diblokir? â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Blokir jika: sudah pernah input BMI DAN masih punya rencana diet aktif
 // (artinya target belum selesai/diselesaikan)
@@ -54,8 +74,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($tinggi < 100 || $tinggi > 230 || $berat < 20 || $berat > 250
             || $usia < 10 || $usia > 100 || !in_array($jk, ['L', 'P'], true)) {
-            $_SESSION['pesan_bmi']      = 'Periksa isianmu. Tinggi 100â€“230 cm, berat 20â€“250 kg, usia 10â€“100 tahun.';
+            $_SESSION['pesan_bmi']      = 'Data tidak valid. Tinggi badan harus 100–230 cm, berat badan 20–250 kg, dan usia 10–100 tahun.';
             $_SESSION['pesan_bmi_tipe'] = 'error';
+            $_SESSION['old_bmi_input']  = [
+                'tinggi'    => $_POST['tinggi'] ?? '',
+                'berat'     => $_POST['berat'] ?? '',
+                'usia'      => $_POST['usia'] ?? '',
+                'jk'        => $jk,
+                'aktivitas' => $aktif,
+            ];
         } else {
             // 1. Hitung BMI
             $bmi       = $berat / pow($tinggi / 100, 2);
@@ -96,12 +123,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// Pre-fill form dari riwayat terakhir (hanya relevan jika form tidak diblokir)
-$val_tinggi = $riwayat_terakhir['tinggi_cm']    ?? '';
-$val_berat  = $riwayat_terakhir['berat_kg']     ?? '';
-$val_usia   = $riwayat_terakhir['usia']          ?? '';
-$val_jk     = $riwayat_terakhir['jenis_kelamin'] ?? 'L';
-$val_aktif  = '1.2';
+// Pre-fill form dari input lama (jika ada error) atau dari riwayat terakhir
+$old_input  = $_SESSION['old_bmi_input'] ?? null;
+unset($_SESSION['old_bmi_input']);
+
+$val_tinggi = $old_input['tinggi']    ?? ($riwayat_terakhir['tinggi_cm']    ?? '');
+$val_berat  = $old_input['berat']     ?? ($riwayat_terakhir['berat_kg']     ?? '');
+$val_usia   = $old_input['usia']      ?? ($riwayat_terakhir['usia']          ?? '');
+$val_jk     = $old_input['jk']        ?? ($riwayat_terakhir['jenis_kelamin'] ?? 'L');
+$val_aktif  = $old_input['aktivitas'] ?? '1.2';
 
 $judul = 'Hitung BMI';
 include BASE_DIR . 'includes/header.php';
@@ -127,32 +157,57 @@ include BASE_DIR . 'includes/header.php';
 
     <?php else: ?>
       <!-- Form aktif: belum ada BMI atau rencana sudah selesai -->
-      <form method="post">
+      <form method="post" id="form-bmi">
         <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
 
-        <label for="tinggi">Tinggi badan (cm)</label>
-        <input type="number" id="tinggi" name="tinggi" step="0.1" value="<?= h($val_tinggi) ?>" required>
+        <div class="form-row-2">
+          <div>
+            <label for="tinggi">Tinggi badan (cm)</label>
+            <div class="input-unit-wrapper">
+              <input type="number" id="tinggi" name="tinggi" min="100" max="230" step="0.1" placeholder="Contoh: 170" value="<?= h($val_tinggi) ?>" required>
+              <span class="unit-suffix">cm</span>
+            </div>
+          </div>
 
-        <label for="berat">Berat badan (kg)</label>
-        <input type="number" id="berat" name="berat" step="0.1" value="<?= h($val_berat) ?>" required>
+          <div>
+            <label for="berat">Berat badan (kg)</label>
+            <div class="input-unit-wrapper">
+              <input type="number" id="berat" name="berat" min="20" max="250" step="0.1" placeholder="Contoh: 65" value="<?= h($val_berat) ?>" required>
+              <span class="unit-suffix">kg</span>
+            </div>
+          </div>
+        </div>
 
-        <label for="usia">Usia (tahun)</label>
-        <input type="number" id="usia" name="usia" value="<?= h($val_usia) ?>" required>
+        <div class="form-row-2" style="margin-top: 14px;">
+          <div>
+            <label for="usia">Usia (tahun)</label>
+            <div class="input-unit-wrapper">
+              <input type="number" id="usia" name="usia" min="10" max="100" step="1" placeholder="Contoh: 25" value="<?= h($val_usia) ?>" required>
+              <span class="unit-suffix">thn</span>
+            </div>
+          </div>
 
-        <label for="jk">Jenis kelamin</label>
-        <select id="jk" name="jk" required>
-          <option value="L" <?= $val_jk === 'L' ? 'selected' : '' ?>>Laki-laki</option>
-          <option value="P" <?= $val_jk === 'P' ? 'selected' : '' ?>>Perempuan</option>
-        </select>
+          <div>
+            <label for="jk">Jenis kelamin</label>
+            <select id="jk" name="jk" required>
+              <option value="L" <?= $val_jk === 'L' ? 'selected' : '' ?>>Laki-laki</option>
+              <option value="P" <?= $val_jk === 'P' ? 'selected' : '' ?>>Perempuan</option>
+            </select>
+          </div>
+        </div>
 
-        <label for="aktivitas">Aktivitas harian</label>
-        <select id="aktivitas" name="aktivitas">
-          <option value="1.2"   <?= (string)$val_aktif === '1.2'   ? 'selected' : '' ?>>Jarang olahraga (banyak duduk)</option>
-          <option value="1.375" <?= (string)$val_aktif === '1.375' ? 'selected' : '' ?>>Olahraga ringan 1-3x seminggu</option>
-          <option value="1.55"  <?= (string)$val_aktif === '1.55'  ? 'selected' : '' ?>>Olahraga sedang 3-5x seminggu</option>
-        </select>
+        <div style="margin-top: 14px;">
+          <label for="aktivitas">Aktivitas harian</label>
+          <select id="aktivitas" name="aktivitas">
+            <option value="1.2"   <?= (string)$val_aktif === '1.2'   ? 'selected' : '' ?>>Jarang olahraga (banyak duduk)</option>
+            <option value="1.375" <?= (string)$val_aktif === '1.375' ? 'selected' : '' ?>>Olahraga ringan 1-3x seminggu</option>
+            <option value="1.55"  <?= (string)$val_aktif === '1.55'  ? 'selected' : '' ?>>Olahraga sedang 3-5x seminggu</option>
+          </select>
+        </div>
 
-        <button type="submit" class="tombol penuh">Simpan</button>
+        <button type="submit" id="btn-submit-bmi" class="tombol penuh" style="margin-top: 20px;">
+          Simpan &amp; Hitung BMI &rarr;
+        </button>
       </form>
     <?php endif; ?>
 
@@ -162,9 +217,31 @@ include BASE_DIR . 'includes/header.php';
     <?php if ($riwayat_terakhir): ?>
       <div class="hasil">
         <small>BMI terakhir tersimpan</small>
-        <div class="angka-besar"><?= h(number_format((float)$riwayat_terakhir['bmi'], 1, ',', '.')) ?></div>
-        <span class="badge kategori-<?= h($riwayat_terakhir['kat_kode']) ?>"><?= h($riwayat_terakhir['kat_nama']) ?></span>
-        <p style="margin-top:14px"><?= h($riwayat_terakhir['kat_saran']) ?></p>
+        <div style="display:flex; align-items:baseline; gap:12px; margin-top:4px;">
+          <div class="angka-besar" style="margin:0;"><?= h(number_format((float)$riwayat_terakhir['bmi'], 1, ',', '.')) ?></div>
+          <span class="badge kategori-<?= h($riwayat_terakhir['kat_kode']) ?>" style="font-size:0.9rem; padding:4px 12px;"><?= h($riwayat_terakhir['kat_nama']) ?></span>
+        </div>
+
+        <!-- Indikator Skala Warna Visual BMI Meter -->
+        <div class="bmi-gauge-wrapper">
+          <div class="bmi-gauge-bar" title="Indeks Massa Tubuh: <?= h($riwayat_terakhir['bmi']) ?>">
+            <div class="bmi-gauge-segment kurus" title="Kurus (< 18.5)"></div>
+            <div class="bmi-gauge-segment normal" title="Normal (18.5 - 25.0)"></div>
+            <div class="bmi-gauge-segment gemuk" title="Gemuk (25.1 - 27.0)"></div>
+            <div class="bmi-gauge-segment obesitas" title="Obesitas (> 27.0)"></div>
+            <div class="bmi-gauge-pin" style="left: <?= $posisi_persen ?>%;">
+              <div class="bmi-gauge-pin-dot"></div>
+            </div>
+          </div>
+          <div class="bmi-gauge-labels">
+            <span>Kurus &lt;18,5</span>
+            <span style="color:#059669;">Normal 18,5-25</span>
+            <span style="color:#D97706;">Gemuk 25-27</span>
+            <span style="color:#DC2626;">Obesitas &gt;27</span>
+          </div>
+        </div>
+
+        <p style="margin-top:14px; line-height:1.6;"><?= h($riwayat_terakhir['kat_saran']) ?></p>
         <hr>
         <small>Target kalori harian</small>
         <div class="angka-besar"><?= h(number_format((int)$riwayat_terakhir['target_kalori'], 0, ',', '.')) ?> <small>kkal</small></div>
@@ -174,10 +251,10 @@ include BASE_DIR . 'includes/header.php';
             Target pada rencana aktif tersebut tetap menjadi acuan utama pada Dashboard dan Catatan.
           </p>
         <?php endif; ?>
-        <a class="tombol" href="menu.php">Lihat menu yang cocok</a>
+        <a class="tombol" href="menu.php" style="margin-top:6px;">Lihat menu yang cocok &rarr;</a>
       </div>
     <?php else: ?>
-      <div class="kosong">Hasilnya akan muncul di sini setelah kamu menekan <b>Simpan</b>.</div>
+      <div class="kosong">Hasilnya akan muncul di sini setelah kamu menekan <b>Simpan &amp; Hitung BMI</b>.</div>
     <?php endif; ?>
 
     <div class="kartu" style="margin-top: 20px; padding: 20px;">
@@ -188,20 +265,43 @@ include BASE_DIR . 'includes/header.php';
         Berikut adalah rentang acuan indeks massa tubuh yang digunakan dalam sistem:
       </p>
       <div style="display: flex; flex-direction: column; gap: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--latar); border-radius: var(--radius-kecil); font-size: 0.88rem;">
-          <span class="badge kategori-kurus" style="font-size: 0.78rem;">Kurus / Underweight</span>
+        <div class="baris-standar-bmi <?= ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'kurus') ? 'aktif-kategori' : '' ?>" style="display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: var(--latar); border-radius: var(--radius-kecil); font-size: 0.88rem;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="badge kategori-kurus" style="font-size: 0.78rem;">Kurus / Underweight</span>
+            <?php if ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'kurus'): ?>
+              <span class="tag-posisi-anda">&check; Kategori Tubuhmu</span>
+            <?php endif; ?>
+          </div>
           <strong>&lt; 18,5</strong>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--latar); border-radius: var(--radius-kecil); font-size: 0.88rem;">
-          <span class="badge kategori-normal" style="font-size: 0.78rem;">Normal (Ideal)</span>
+
+        <div class="baris-standar-bmi <?= ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'normal') ? 'aktif-kategori' : '' ?>" style="display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: var(--latar); border-radius: var(--radius-kecil); font-size: 0.88rem;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="badge kategori-normal" style="font-size: 0.78rem;">Normal (Ideal)</span>
+            <?php if ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'normal'): ?>
+              <span class="tag-posisi-anda">&check; Kategori Tubuhmu</span>
+            <?php endif; ?>
+          </div>
           <strong>18,5 &ndash; 25,0</strong>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--latar); border-radius: var(--radius-kecil); font-size: 0.88rem;">
-          <span class="badge kategori-gemuk" style="font-size: 0.78rem;">Gemuk / Overweight</span>
+
+        <div class="baris-standar-bmi <?= ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'gemuk') ? 'aktif-kategori' : '' ?>" style="display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: var(--latar); border-radius: var(--radius-kecil); font-size: 0.88rem;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="badge kategori-gemuk" style="font-size: 0.78rem;">Gemuk / Overweight</span>
+            <?php if ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'gemuk'): ?>
+              <span class="tag-posisi-anda">&check; Kategori Tubuhmu</span>
+            <?php endif; ?>
+          </div>
           <strong>25,1 &ndash; 27,0</strong>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--latar); border-radius: var(--radius-kecil); font-size: 0.88rem;">
-          <span class="badge kategori-obesitas" style="font-size: 0.78rem;">Obesitas</span>
+
+        <div class="baris-standar-bmi <?= ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'obesitas') ? 'aktif-kategori' : '' ?>" style="display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: var(--latar); border-radius: var(--radius-kecil); font-size: 0.88rem;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="badge kategori-obesitas" style="font-size: 0.78rem;">Obesitas</span>
+            <?php if ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'obesitas'): ?>
+              <span class="tag-posisi-anda">&check; Kategori Tubuhmu</span>
+            <?php endif; ?>
+          </div>
           <strong>&gt; 27,0</strong>
         </div>
       </div>
@@ -210,6 +310,71 @@ include BASE_DIR . 'includes/header.php';
     <p class="catatan">BMI hanya indikator kasar dan kurang cocok untuk atlet, ibu hamil, dan usia di bawah 18 tahun. Target kalori bersifat perkiraan.</p>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var formBmi = document.getElementById('form-bmi');
+  if (!formBmi) return;
+
+  var inputs = formBmi.querySelectorAll('input[type="number"]');
+
+  inputs.forEach(function (inp) {
+    // 1. Nonaktifkan pengubahan angka via scroll wheel mouse
+    inp.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      inp.blur();
+    }, { passive: false });
+
+    // 2. Blokir pengetikan karakter minus (-), plus (+), dan notasi eksponensial (e, E)
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === '-' || e.key === '+' || e.key === 'e' || e.key === 'E') {
+        e.preventDefault();
+      }
+    });
+
+    // 3. Sanitasi nilai jika ditempel (paste) angka negatif
+    inp.addEventListener('input', function () {
+      if (this.value !== '') {
+        var val = parseFloat(this.value);
+        if (val < 0) {
+          this.value = Math.abs(val) || '';
+        }
+      }
+    });
+  });
+
+  // 4. Mencegah submit form saat menekan tombol Enter di dalam input
+  // Pengguna harus secara sadar menekan tombol "Simpan" secara manual
+  formBmi.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      return false;
+    }
+  });
+
+  // 5. Validasi sebelum formulir dikirimkan
+  formBmi.addEventListener('submit', function (e) {
+    var tinggi = parseFloat(document.getElementById('tinggi').value);
+    var berat  = parseFloat(document.getElementById('berat').value);
+    var usia   = parseInt(document.getElementById('usia').value, 10);
+
+    var pesan = '';
+    if (isNaN(tinggi) || tinggi < 100 || tinggi > 230) {
+      pesan = 'Tinggi badan harus diisi antara 100 sampai 230 cm.';
+    } else if (isNaN(berat) || berat < 20 || berat > 250) {
+      pesan = 'Berat badan harus diisi antara 20 sampai 250 kg.';
+    } else if (isNaN(usia) || usia < 10 || usia > 100) {
+      pesan = 'Usia harus diisi antara 10 sampai 100 tahun.';
+    }
+
+    if (pesan) {
+      e.preventDefault();
+      alert(pesan);
+      return false;
+    }
+  });
+});
+</script>
 
 <?php include BASE_DIR . 'includes/footer.php'; ?>
 

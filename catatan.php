@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/config/koneksi.php';
 wajib_login();
 
@@ -140,161 +140,232 @@ $judul = 'Catatan Kalori';
 include BASE_DIR . 'includes/header.php';
 ?>
 
-<h2>Catatan kalori</h2>
+<div class="catatan-page-header">
+  <div>
+    <h2>Catatan Kalori</h2>
+    <p class="teks-redup">Pantau asupan kalori harianmu secara konsisten.</p>
+  </div>
+  <?php if ($terakhir && $tanggal_pilihan === $hari_ini): ?>
+    <div class="catatan-tanggal-badge">
+      <span>📅</span>
+      <span><?= h($tanggal_teks) ?></span>
+    </div>
+  <?php endif; ?>
+</div>
 
-<?php if ($pesan): ?><div class="alert <?= $pesan_tipe === 'error' ? 'error' : 'sukses' ?>"><?= h($pesan) ?></div><?php endif; ?>
+<?php if ($pesan): ?>
+  <div class="alert <?= $pesan_tipe === 'error' ? 'error' : 'sukses' ?>"><?= h($pesan) ?></div>
+<?php endif; ?>
 
 <?php if (!$terakhir): ?>
-  <div class="kosong">
-    Kamu belum punya target kalori. Hitung BMI dulu supaya sistem bisa menentukan targetmu.<br><br>
-    <a class="tombol" href="bmi.php">Hitung BMI dulu</a>
+  <div class="kosong-state">
+    <div class="kosong-state-ikon">🎯</div>
+    <h3>Belum ada target kalori</h3>
+    <p>Hitung BMI dulu agar sistem bisa menentukan target kalori harianmu.</p>
+    <a class="tombol" href="bmi.php">Hitung BMI sekarang &rarr;</a>
   </div>
 
 <?php else: ?>
-  <form method="get" class="filter-bar catatan-tanggal">
-    <div>
-      <label for="tanggal-riwayat">Lihat catatan tanggal</label>
-      <input type="date" id="tanggal-riwayat" name="tanggal" value="<?= h($tanggal_pilihan) ?>" max="<?= h($tanggal_maks_lihat) ?>">
-    </div>
-    <button type="submit" class="tombol">Tampilkan</button>
-    <?php if ($tanggal_pilihan !== $hari_ini): ?>
-      <a class="tombol tombol-sekunder" href="catatan.php">Kembali ke hari ini</a>
-    <?php endif; ?>
-  </form>
-
-  <?php if ($tanggal_riwayat): ?>
-    <nav class="tanggal-cepat" aria-label="Tanggal catatan terbaru">
-      <span>Tanggal tercatat:</span>
-      <?php foreach ($tanggal_riwayat as $tanggal): ?>
-        <a class="<?= $tanggal === $tanggal_pilihan ? 'aktif' : '' ?>" href="catatan.php?<?= h(http_build_query(['tanggal' => $tanggal])) ?>">
-          <?= h(date('j M', strtotime($tanggal))) ?>
-        </a>
-      <?php endforeach; ?>
-    </nav>
-  <?php endif; ?>
-
-  <p class="teks-redup">
-    <?= h($tanggal_teks) ?> &middot; Kategori BMI:
-    <span class="badge kategori-<?= h($terakhir['kat_kode']) ?>"><?= h($terakhir['kat_nama']) ?></span>
-  </p>
-
-  <div class="ringkas">
-    <?php if ($tanggal_pilihan === $hari_ini): ?>
-      <div class="kartu"><small>Target harian</small><div class="angka-besar"><?= nf($target) ?></div>kkal</div>
-      <div class="kartu"><small>Sudah dicatat</small><div class="angka-besar"><?= nf($total) ?></div>kkal</div>
-      <div class="kartu">
-        <small><?= $sisa >= 0 ? 'Sisa kalori' : 'Melebihi target' ?></small>
-        <div class="angka-besar"><?= nf(abs($sisa)) ?></div>kkal
-      </div>
-    <?php else: ?>
-      <div class="kartu"><small>Total tercatat</small><div class="angka-besar"><?= nf($total) ?></div>kkal</div>
-      <div class="kartu"><small>Jumlah catatan</small><div class="angka-besar"><?= count($catatan) ?></div>makanan</div>
-      <div class="kartu">
-        <small>Rata-rata per makanan</small>
-        <div class="angka-besar"><?= count($catatan) > 0 ? nf(round($total / count($catatan))) : 0 ?></div>kkal
-      </div>
-    <?php endif; ?>
-  </div>
 
   <?php if ($tanggal_pilihan === $hari_ini): ?>
-    <div class="progres"><div class="progres-isi <?= $kelas ?>" style="width:<?= min(100, (int)$persen) ?>%"></div></div>
-    <p class="catatan"><?= (int)$persen ?>% dari target
-      <?php if ($sisa < 0): ?> &middot; Catatan hari ini sudah melewati target kalori perkiraan.<?php endif; ?>
-    </p>
+    <!-- Ringkasan kalori hari ini -->
+    <div class="catatan-ringkasan-card">
+      <div class="catatan-ringkasan-info">
+        <div class="catatan-stat-item">
+          <span class="catatan-stat-label">🎯 Target harian</span>
+          <span class="catatan-stat-nilai"><?= nf($target) ?> <small>kkal</small></span>
+        </div>
+        <div class="catatan-stat-item">
+          <span class="catatan-stat-label">✅ Sudah dicatat</span>
+          <span class="catatan-stat-nilai"><?= nf($total) ?> <small>kkal</small></span>
+        </div>
+        <div class="catatan-stat-item <?= $sisa < 0 ? 'stat-melebihi' : '' ?>">
+          <span class="catatan-stat-label"><?= $sisa >= 0 ? '🟢 Sisa kalori' : '🔴 Melebihi target' ?></span>
+          <span class="catatan-stat-nilai"><?= nf(abs($sisa)) ?> <small>kkal</small></span>
+        </div>
+      </div>
+      <div class="catatan-progress-area">
+        <div class="catatan-progress-label">
+          <span><?= (int)$persen ?>% dari target</span>
+          <?php if ($sisa < 0): ?><span class="catatan-over-tag">Melewati target</span><?php endif; ?>
+        </div>
+        <div class="progres" style="margin-top:6px">
+          <div class="progres-isi <?= $kelas ?>" style="width:<?= min(100, (int)$persen) ?>%"></div>
+        </div>
+      </div>
+    </div>
   <?php else: ?>
-    <p class="catatan">Riwayat ini berisi makanan yang kamu catat untuk tanggal tersebut. Target kalori saat ini tidak digunakan untuk menilai tanggal lampau.</p>
-  <?php endif; ?>
-
-  <div class="hasil" style="margin-bottom:20px">
-    <h3 style="margin-bottom:6px">Catat makanan lain</h3>
-    <p class="teks-redup">Gunakan bagian ini untuk makanan yang belum kamu catat dari Menu Rekomendasi. Catatan disimpan untuk <?= h($tanggal_teks) ?>.</p>
-    <form method="post" class="form-tambah">
-      <input type="hidden" name="aksi" value="tambah">
-      <input type="hidden" name="csrf_token" value="<?= h($csrf_token) ?>">
-      <input type="hidden" name="tanggal" value="<?= h($tanggal_pilihan) ?>">
-      <div>
-        <label for="menu_id">Menu</label>
-        <select id="menu_id" name="menu_id" required>
-          <option value="">Pilih menu...</option>
-          <?php $w_sebelum = '';
-          foreach ($semua_menu as $m):
-              if ($m['waktu_makan'] !== $w_sebelum):
-                  if ($w_sebelum !== '') echo '</optgroup>';
-                  echo '<optgroup label="' . h(ucfirst($m['waktu_makan'])) . '">';
-                  $w_sebelum = $m['waktu_makan'];
-              endif; ?>
-            <option value="<?= (int)$m['id'] ?>"><?= h($m['nama_menu']) ?> (<?= (int)$m['kalori'] ?> kkal)</option>
-          <?php endforeach;
-          if ($w_sebelum !== '') echo '</optgroup>'; ?>
-        </select>
-      </div>
-      <div style="max-width:180px">
-        <label for="porsi">Porsi</label>
-        <select id="porsi" name="porsi">
-          <option value="0.5">&frac12; porsi</option>
-          <option value="1" selected>1 porsi</option>
-          <option value="1.5">1,5 porsi</option>
-          <option value="2">2 porsi</option>
-        </select>
-      </div>
-      <button type="submit" class="tombol">Tambah</button>
-    </form>
-  </div>
-
-  <div class="hasil" style="margin-bottom:20px">
-    <h3 style="margin-bottom:6px">Makanan yang dicatat &middot; <?= h($tanggal_teks) ?></h3>
-    <?php if (!$catatan): ?>
-      <p class="teks-redup" style="margin:8px 0 0">Belum ada makanan yang dicatat untuk tanggal ini. Tambahkan di atas jika kamu ingin mengisi riwayatnya.</p>
-    <?php else: foreach ($catatan as $c):
-        $porsi_teks = rtrim(rtrim(number_format($c['porsi'], 1, ',', ''), '0'), ','); ?>
-      <div class="baris-catatan">
-        <div>
-          <b><?= h($c['nama_menu']) ?></b><br>
-          <small><?= h(ucfirst($c['waktu_makan'])) ?> &middot; <?= h($porsi_teks) ?> porsi</small>
+    <!-- Ringkasan tanggal lampau -->
+    <div class="catatan-ringkasan-card catatan-riwayat-mode">
+      <div class="catatan-riwayat-badge">📆 Melihat riwayat: <?= h($tanggal_teks) ?></div>
+      <div class="catatan-ringkasan-info" style="margin-top:14px">
+        <div class="catatan-stat-item">
+          <span class="catatan-stat-label">📊 Total tercatat</span>
+          <span class="catatan-stat-nilai"><?= nf($total) ?> <small>kkal</small></span>
         </div>
-        <div style="text-align:right">
-          <b><?= nf($c['kalori'] * $c['porsi']) ?> kkal</b>
-          <form method="post" style="margin-top:6px">
-            <input type="hidden" name="aksi" value="hapus">
-            <input type="hidden" name="csrf_token" value="<?= h($csrf_token) ?>">
-            <input type="hidden" name="tanggal" value="<?= h($tanggal_pilihan) ?>">
-            <input type="hidden" name="id" value="<?= (int)$c['id'] ?>">
-            <button type="submit" class="tombol hapus" onclick="return confirm('Hapus catatan ini?')">Hapus</button>
-          </form>
+        <div class="catatan-stat-item">
+          <span class="catatan-stat-label">🍽️ Jumlah catatan</span>
+          <span class="catatan-stat-nilai"><?= count($catatan) ?> <small>menu</small></span>
+        </div>
+        <div class="catatan-stat-item">
+          <span class="catatan-stat-label">📈 Rata-rata per menu</span>
+          <span class="catatan-stat-nilai"><?= count($catatan) > 0 ? nf(round($total / count($catatan))) : 0 ?> <small>kkal</small></span>
         </div>
       </div>
-    <?php endforeach; endif; ?>
-  </div>
-
-  <?php if ($saran): ?>
-    <h3 style="margin-bottom:10px">Masih muat di sisa kalorimu</h3>
-    <div class="daftar-menu">
-      <?php foreach ($saran as $m): ?>
-        <article class="menu-kartu">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px">
-            <span class="badge-waktu badge-waktu-<?= h($m['waktu_makan']) ?>">
-              <?= h(ucfirst($m['waktu_makan'])) ?>
-            </span>
-            <?php if ($m['vegetarian']): ?>
-              <span class="badge kategori-normal" style="font-size:.72rem;padding:2px 8px">Veg</span>
-            <?php endif; ?>
-          </div>
-          <h3><?= h($m['nama_menu']) ?></h3>
-          <div class="menu-info"><b><?= (int)$m['kalori'] ?> kkal</b></div>
-          <form method="post">
-            <input type="hidden" name="aksi" value="tambah">
-            <input type="hidden" name="csrf_token" value="<?= h($csrf_token) ?>">
-            <input type="hidden" name="tanggal" value="<?= h($tanggal_pilihan) ?>">
-            <input type="hidden" name="menu_id" value="<?= (int)$m['id'] ?>">
-            <input type="hidden" name="porsi" value="1">
-            <button type="submit" class="tombol kecil">Catat ini</button>
-          </form>
-        </article>
-      <?php endforeach; ?>
+      <p class="catatan" style="margin-top:8px">Ini adalah riwayat catatan untuk tanggal tersebut. Target kalori saat ini tidak digunakan untuk menilai tanggal lampau.</p>
     </div>
   <?php endif; ?>
 
-  <p class="catatan">Kalori merupakan perkiraan per porsi standar dan bersifat edukatif, bukan pengganti saran ahli gizi.</p>
+  <!-- Filter tanggal -->
+  <div class="catatan-filter-bar">
+    <form method="get" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <label for="tanggal-riwayat" style="font-size:0.85rem; font-weight:600; color:var(--teks-redup);">Lihat tanggal lain:</label>
+      <input type="date" id="tanggal-riwayat" name="tanggal" value="<?= h($tanggal_pilihan) ?>" max="<?= h($tanggal_maks_lihat) ?>" style="width:auto;">
+      <button type="submit" class="tombol" style="padding:8px 18px;">Tampilkan</button>
+      <?php if ($tanggal_pilihan !== $hari_ini): ?>
+        <a class="tombol tombol-sekunder" href="catatan.php" style="padding:8px 18px;">Kembali ke hari ini</a>
+      <?php endif; ?>
+    </form>
+    <?php if ($tanggal_riwayat): ?>
+      <nav class="tanggal-cepat" aria-label="Tanggal catatan terbaru">
+        <?php foreach ($tanggal_riwayat as $tanggal): ?>
+          <a class="<?= $tanggal === $tanggal_pilihan ? 'aktif' : '' ?>" href="catatan.php?<?= h(http_build_query(['tanggal' => $tanggal])) ?>">
+            <?= h(date('j M', strtotime($tanggal))) ?>
+          </a>
+        <?php endforeach; ?>
+      </nav>
+    <?php endif; ?>
+  </div>
+
+  <div class="catatan-two-col">
+
+    <!-- Kolom kiri: Form tambah -->
+    <div class="catatan-col-form">
+      <div class="kartu catatan-form-card">
+        <div class="catatan-form-header">
+          <h3>➕ Catat Makanan</h3>
+          <p class="teks-redup" style="font-size:0.85rem; margin-top:4px;">Tambah makanan yang kamu konsumsi pada <strong><?= h($tanggal_teks) ?></strong>.</p>
+        </div>
+        <form method="post" class="catatan-form-body">
+          <input type="hidden" name="aksi" value="tambah">
+          <input type="hidden" name="csrf_token" value="<?= h($csrf_token) ?>">
+          <input type="hidden" name="tanggal" value="<?= h($tanggal_pilihan) ?>">
+          <div>
+            <label for="menu_id">Pilih menu</label>
+            <select id="menu_id" name="menu_id" required>
+              <option value="">-- Pilih menu --</option>
+              <?php $w_sebelum = '';
+              foreach ($semua_menu as $m):
+                  if ($m['waktu_makan'] !== $w_sebelum):
+                      if ($w_sebelum !== '') echo '</optgroup>';
+                      echo '<optgroup label="' . h(ucfirst($m['waktu_makan'])) . '">';
+                      $w_sebelum = $m['waktu_makan'];
+                  endif; ?>
+                <option value="<?= (int)$m['id'] ?>"><?= h($m['nama_menu']) ?> &mdash; <?= (int)$m['kalori'] ?> kkal</option>
+              <?php endforeach;
+              if ($w_sebelum !== '') echo '</optgroup>'; ?>
+            </select>
+          </div>
+          <div>
+            <label for="porsi">Jumlah porsi</label>
+            <select id="porsi" name="porsi">
+              <option value="0.5">½ porsi</option>
+              <option value="1" selected>1 porsi</option>
+              <option value="1.5">1,5 porsi</option>
+              <option value="2">2 porsi</option>
+            </select>
+          </div>
+          <button type="submit" class="tombol penuh" style="margin-top:8px;">Tambah ke catatan</button>
+        </form>
+
+        <?php if ($saran): ?>
+          <div class="catatan-saran-section">
+            <div class="catatan-saran-header">
+              <span>💡 Masih muat di sisa kalorimu</span>
+            </div>
+            <div class="catatan-saran-grid">
+              <?php foreach ($saran as $m): ?>
+                <div class="catatan-saran-item">
+                  <div class="catatan-saran-info">
+                    <span class="badge-waktu badge-waktu-<?= h($m['waktu_makan']) ?>" style="font-size:0.72rem;"><?= h(ucfirst($m['waktu_makan'])) ?></span>
+                    <strong class="catatan-saran-nama"><?= h($m['nama_menu']) ?></strong>
+                    <span class="catatan-saran-kal"><?= (int)$m['kalori'] ?> kkal</span>
+                  </div>
+                  <form method="post">
+                    <input type="hidden" name="aksi" value="tambah">
+                    <input type="hidden" name="csrf_token" value="<?= h($csrf_token) ?>">
+                    <input type="hidden" name="tanggal" value="<?= h($tanggal_pilihan) ?>">
+                    <input type="hidden" name="menu_id" value="<?= (int)$m['id'] ?>">
+                    <input type="hidden" name="porsi" value="1">
+                    <button type="submit" class="tombol kecil" style="white-space:nowrap;">+ Catat</button>
+                  </form>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <!-- Kolom kanan: Daftar catatan -->
+    <div class="catatan-col-list">
+      <div class="kartu catatan-list-card">
+        <div class="catatan-list-header">
+          <h3>🍽️ Makanan Tercatat</h3>
+          <span class="catatan-list-count"><?= count($catatan) ?> item &middot; <?= nf($total) ?> kkal</span>
+        </div>
+
+        <?php if (!$catatan): ?>
+          <div class="catatan-kosong-state">
+            <div style="font-size:2.5rem; margin-bottom:10px;">🥗</div>
+            <p>Belum ada makanan yang dicatat untuk tanggal ini.</p>
+            <p class="teks-redup" style="font-size:0.85rem;">Tambahkan di kolom sebelah kiri.</p>
+          </div>
+        <?php else: ?>
+          <?php
+          // Kelompokkan per waktu makan
+          $per_waktu = [];
+          foreach ($catatan as $c) {
+              $per_waktu[$c['waktu_makan']][] = $c;
+          }
+          $urutan_waktu = ['pagi', 'siang', 'malam', 'camilan'];
+          $ikon_waktu = ['pagi' => '🌅', 'siang' => '☀️', 'malam' => '🌙', 'camilan' => '🍪'];
+          foreach ($urutan_waktu as $wkt):
+              if (empty($per_waktu[$wkt])) continue;
+              $sub_total = array_sum(array_map(fn($c) => $c['kalori'] * $c['porsi'], $per_waktu[$wkt]));
+          ?>
+            <div class="catatan-waktu-group">
+              <div class="catatan-waktu-label">
+                <span><?= $ikon_waktu[$wkt] ?> <?= ucfirst($wkt) ?></span>
+                <span class="catatan-waktu-kal"><?= nf($sub_total) ?> kkal</span>
+              </div>
+              <?php foreach ($per_waktu[$wkt] as $c):
+                $porsi_teks = rtrim(rtrim(number_format($c['porsi'], 1, ',', ''), '0'), ',');
+              ?>
+                <div class="baris-catatan-modern">
+                  <div class="catatan-item-info">
+                    <span class="catatan-item-nama"><?= h($c['nama_menu']) ?></span>
+                    <span class="catatan-item-detail"><?= h($porsi_teks) ?> porsi &middot; <?= nf($c['kalori'] * $c['porsi']) ?> kkal</span>
+                  </div>
+                  <form method="post" style="flex-shrink:0">
+                    <input type="hidden" name="aksi" value="hapus">
+                    <input type="hidden" name="csrf_token" value="<?= h($csrf_token) ?>">
+                    <input type="hidden" name="tanggal" value="<?= h($tanggal_pilihan) ?>">
+                    <input type="hidden" name="id" value="<?= (int)$c['id'] ?>">
+                    <button type="submit" class="tombol-hapus-kecil" onclick="return confirm('Hapus catatan ini?')" title="Hapus">&times;</button>
+                  </form>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+
+      <p class="catatan" style="margin-top:12px;">Kalori merupakan perkiraan per porsi standar dan bersifat edukatif, bukan pengganti saran ahli gizi.</p>
+    </div>
+
+  </div>
+
 <?php endif; ?>
 
 <?php include BASE_DIR . 'includes/footer.php'; ?>

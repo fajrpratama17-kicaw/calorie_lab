@@ -20,12 +20,27 @@ $st->execute([$uid]);
 $rencana = $st->fetch(PDO::FETCH_ASSOC);
 
 // Hasil BMI terakhir (kalau ada)
-$st = $pdo->prepare("SELECT r.bmi, r.target_kalori, k.nama AS kategori
+$st = $pdo->prepare("SELECT r.bmi, r.target_kalori, r.kategori_id, k.nama AS kategori
                      FROM riwayat_bmi r
                      JOIN kategori_bmi k ON k.id = r.kategori_id
                      WHERE r.user_id = ? ORDER BY r.id DESC LIMIT 1");
 $st->execute([$uid]);
 $bmi = $st->fetch(PDO::FETCH_ASSOC);
+
+// Hitung jumlah rekomendasi menu yang cocok
+$total_menu_sesuai = 0;
+if (!empty($bmi['kategori_id'])) {
+    $st_m = $pdo->prepare("SELECT COUNT(DISTINCT menu_id) FROM menu_kategori WHERE kategori_id = ?");
+    $st_m->execute([$bmi['kategori_id']]);
+    $total_menu_sesuai = (int)$st_m->fetchColumn();
+}
+if ($total_menu_sesuai === 0) {
+    try {
+        $total_menu_sesuai = (int)$pdo->query("SELECT COUNT(*) FROM menu_diet")->fetchColumn();
+    } catch (Exception $e) {
+        $total_menu_sesuai = 0;
+    }
+}
 
 $st = $pdo->prepare('SELECT mh.id, COUNT(i.id) AS jumlah_menu
                      FROM menu_harian mh
@@ -88,10 +103,59 @@ $st = $pdo->prepare('SELECT COUNT(*) FROM catatan_makan WHERE user_id = ? AND ta
 $st->execute([$uid, $hari_ini]);
 $jumlah_makanan_hari_ini = (int)$st->fetchColumn();
 
+// Hitung total kalori yang dikonsumsi hari ini dari catatan_makan
+$st_kal = $pdo->prepare('
+    SELECT COALESCE(SUM(md.kalori * cm.porsi), 0)
+    FROM catatan_makan cm
+    JOIN menu_diet md ON md.id = cm.menu_id
+    WHERE cm.user_id = ? AND cm.tanggal = ?
+');
+$st_kal->execute([$uid, $hari_ini]);
+$kalori_tercatat_hari_ini = (int)round((float)$st_kal->fetchColumn());
+
+$sisa_kalori = $target_kalori ? max(0, (int)$target_kalori - $kalori_tercatat_hari_ini) : null;
+$persen_kalori = ($target_kalori && $target_kalori > 0) ? min(100, round(($kalori_tercatat_hari_ini / $target_kalori) * 100)) : 0;
+
+$hari_ke = 0;
 $rencana_selesai = false;
 if ($rencana) {
-    $selesai_rencana = (new DateTime($rencana['tanggal_mulai']))->modify('+' . (int)$rencana['durasi_hari'] . ' days')->format('Y-m-d');
+    $tgl_mulai = new DateTime($rencana['tanggal_mulai']);
+    $tgl_sekarang = new DateTime($hari_ini);
+    $durasi = max(1, (int)$rencana['durasi_hari']);
+    $selesai_rencana = (clone $tgl_mulai)->modify('+' . $durasi . ' days')->format('Y-m-d');
     $rencana_selesai = $hari_ini >= $selesai_rencana;
+    
+    $diff = $tgl_mulai->diff($tgl_sekarang);
+    $hari_ke = max(1, min($durasi, $diff->invert ? 1 : ($diff->days + 1)));
+}
+
+// Sapaan waktu dinamis
+$jam = (int)date('H');
+if ($jam >= 4 && $jam < 11) {
+    $sapaan = 'Selamat Pagi';
+    $ikon_waktu = '🌅';
+} elseif ($jam >= 11 && $jam < 15) {
+    $sapaan = 'Selamat Siang';
+    $ikon_waktu = '☀️';
+} elseif ($jam >= 15 && $jam < 18) {
+    $sapaan = 'Selamat Sore';
+    $ikon_waktu = '🌇';
+} else {
+    $sapaan = 'Selamat Malam';
+    $ikon_waktu = '🌙';
+}
+
+// Kategori warna BMI klinis
+$bmi_badge_class = 'normal';
+if ($bmi) {
+    $kat_raw = strtolower($bmi['kategori'] ?? '');
+    if (strpos($kat_raw, 'kurus') !== false) {
+        $bmi_badge_class = 'kurus';
+    } elseif (strpos($kat_raw, 'gemuk') !== false || strpos($kat_raw, 'lebih') !== false) {
+        $bmi_badge_class = 'gemuk';
+    } elseif (strpos($kat_raw, 'obesitas') !== false) {
+        $bmi_badge_class = 'obesitas';
+    }
 }
 
 if (!$bmi) {
@@ -139,56 +203,108 @@ include BASE_DIR . 'includes/header.php';
 
 <header class="dashboard-heading">
   <div>
-    <p class="dashboard-eyebrow">DASHBOARD</p>
-    <h2>Halo, <?= h($_SESSION['nama'] ?? 'Pengguna') ?></h2>
-    <p class="teks-redup">Ini ringkasan dan langkah kecil yang bisa kamu lakukan hari ini.</p>
+    <p class="dashboard-eyebrow"><?= $ikon_waktu ?> <?= $sapaan ?>, <?= h($_SESSION['nama'] ?? 'Pengguna') ?></p>
+    <h2>Dashboard Kesehatan</h2>
+    <p class="teks-redup">Pantau kuota kalori, progres berat badan, dan bimbingan nutrisi harianmu.</p>
   </div>
-  <a class="tombol tombol-sekunder" href="profil.php">Lihat perkembangan</a>
 </header>
 
 <section aria-labelledby="ringkasan-judul">
   <div class="dashboard-section-heading">
     <div>
-      <h3 id="ringkasan-judul">Ringkasan dietmu</h3>
-      <p class="teks-redup">Angka bersifat perkiraan edukatif, bukan saran medis.</p>
+      <h3 id="ringkasan-judul">Ringkasan Nutrisi & Target Hari Ini</h3>
+      <p class="teks-redup">Data akurat dan terpantau secara konsisten berdasarkan standar nutrisi.</p>
     </div>
   </div>
 
-  <div class="dashboard-ringkasan">
+  <div class="dashboard-ringkasan-4">
+    <!-- 1. Target Kalori Harian -->
+    <article class="dashboard-stat dashboard-stat-highlight">
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+        <span class="dashboard-stat-label">Target Kalori Harian</span>
+        <span class="stat-icon-wrapper" title="Target Kalori" aria-hidden="true">🔥</span>
+      </div>
+      <?php if ($target_kalori): ?>
+        <strong class="dashboard-stat-value"><?= number_format((float)$target_kalori, 0, ',', '.') ?> <span style="font-size:0.95rem; font-weight:600; color:var(--teks-redup);">kkal</span></strong>
+        
+        <div class="progress-bar-bg" title="Progres kalori: <?= $persen_kalori ?>%">
+          <div class="progress-bar-fill" style="width: <?= $persen_kalori ?>%;"></div>
+        </div>
+        
+        <span class="dashboard-stat-note" style="margin-top:4px;">
+          Tercatat: <strong><?= number_format($kalori_tercatat_hari_ini, 0, ',', '.') ?></strong> &middot; Sisa: <strong><?= number_format($sisa_kalori, 0, ',', '.') ?></strong> kkal
+        </span>
+        <a class="dashboard-stat-link" href="catatan.php">Catat asupan <span aria-hidden="true">&rarr;</span></a>
+      <?php else: ?>
+        <strong class="dashboard-stat-empty">Belum tersedia</strong>
+        <span class="dashboard-stat-note">Hitung BMI untuk mendapatkan kuota target kalori.</span>
+        <a class="dashboard-stat-link" href="bmi.php">Hitung BMI Sekarang <span aria-hidden="true">&rarr;</span></a>
+      <?php endif; ?>
+    </article>
+
+    <!-- 2. Status BMI Terkini -->
     <article class="dashboard-stat">
-      <span class="dashboard-stat-label">BMI terakhir</span>
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+        <span class="dashboard-stat-label">Status BMI Terkini</span>
+        <span class="stat-icon-wrapper" title="Indeks Massa Tubuh" aria-hidden="true">⚖️</span>
+      </div>
       <?php if ($bmi): ?>
         <strong class="dashboard-stat-value"><?= h(number_format((float)$bmi['bmi'], 1, ',', '.')) ?></strong>
-        <span class="dashboard-stat-note"><?= h($bmi['kategori']) ?></span>
+        <div>
+          <span class="badge-bmi <?= $bmi_badge_class ?>"><?= h($bmi['kategori']) ?></span>
+        </div>
+        <span class="dashboard-stat-note" style="margin-top:8px;">
+          Berat terakhir: <strong><?= $berat_terakhir ? number_format((float)$berat_terakhir, 1, ',', '.') . ' kg' : '-' ?></strong>
+        </span>
+        <a class="dashboard-stat-link" href="bmi.php">Ukur ulang BMI <span aria-hidden="true">&rarr;</span></a>
       <?php else: ?>
         <strong class="dashboard-stat-empty">Belum dihitung</strong>
+        <span class="dashboard-stat-note">Ketahui rasio berat & tinggi badanmu.</span>
         <a class="dashboard-stat-link" href="bmi.php">Hitung BMI <span aria-hidden="true">&rarr;</span></a>
       <?php endif; ?>
     </article>
 
-    <article class="dashboard-stat dashboard-stat-highlight">
-      <span class="dashboard-stat-label">Target kalori harian</span>
-      <?php if ($target_kalori): ?>
-        <strong class="dashboard-stat-value"><?= number_format((float)$target_kalori, 0, ',', '.') ?></strong>
-        <span class="dashboard-stat-note">kkal &middot; perkiraan</span>
+    <!-- 3. Rencana Diet Aktif -->
+    <article class="dashboard-stat">
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+        <span class="dashboard-stat-label">Program Diet Aktif</span>
+        <span class="stat-icon-wrapper" title="Rencana Diet" aria-hidden="true">🎯</span>
+      </div>
+      <?php if ($rencana): ?>
+        <strong class="dashboard-stat-plan" style="margin-top:8px;"><?= h($label_tujuan[$rencana['tujuan']] ?? $rencana['tujuan']) ?></strong>
+        <span class="dashboard-stat-note" style="margin-top:8px;">
+          <strong><?= h(number_format((float)$berat_terakhir, 1, ',', '.')) ?> kg</strong> kini <span aria-hidden="true">&rarr;</span>
+          <strong><?= h(number_format((float)$rencana['berat_target'], 1, ',', '.')) ?> kg</strong> target
+        </span>
+        <span class="dashboard-stat-note" style="font-size:0.82rem; color:var(--hijau); font-weight:650;">
+          Hari ke-<?= $hari_ke ?> dari <?= (int)$rencana['durasi_hari'] ?> hari
+        </span>
+        <a class="dashboard-stat-link" href="rencana.php">Detail rencana <span aria-hidden="true">&rarr;</span></a>
       <?php else: ?>
-        <strong class="dashboard-stat-empty">Belum tersedia</strong>
-        <span class="dashboard-stat-note">Hitung BMI untuk melihat perkiraan target.</span>
+        <strong class="dashboard-stat-empty">Belum ada rencana</strong>
+        <span class="dashboard-stat-note">Atur target berat badan dan timeline dietmu.</span>
+        <a class="dashboard-stat-link" href="rencana.php">Buat Rencana <span aria-hidden="true">&rarr;</span></a>
       <?php endif; ?>
     </article>
 
+    <!-- 4. Menu Rekomendasi Diet -->
     <article class="dashboard-stat">
-      <span class="dashboard-stat-label">Rencana diet</span>
-      <?php if ($rencana): ?>
-        <strong class="dashboard-stat-plan"><?= h($label_tujuan[$rencana['tujuan']] ?? $rencana['tujuan']) ?></strong>
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+        <span class="dashboard-stat-label">Rekomendasi Menu</span>
+        <span class="stat-icon-wrapper" title="Menu Rekomendasi" aria-hidden="true">🥗</span>
+      </div>
+      <?php if ($menu_harian && (int)$menu_harian['jumlah_menu'] > 0): ?>
+        <strong class="dashboard-stat-value"><?= (int)$menu_harian['jumlah_menu'] ?> <span style="font-size:0.95rem; font-weight:600; color:var(--teks-redup);">menu harian</span></strong>
         <span class="dashboard-stat-note">
-          <?= h(number_format((float)$berat_terakhir, 1, ',', '.')) ?> kg sekarang <span aria-hidden="true">&rarr;</span>
-          <?= h(number_format((float)$rencana['berat_target'], 1, ',', '.')) ?> kg target
+          Telah tersimpan dalam rencana makan hari ini.
         </span>
-        <a class="dashboard-stat-link" href="rencana.php">Lihat rencana <span aria-hidden="true">&rarr;</span></a>
+        <a class="dashboard-stat-link" href="menu.php?hari_ini=1">Buka menu harian <span aria-hidden="true">&rarr;</span></a>
       <?php else: ?>
-        <strong class="dashboard-stat-empty">Belum ada rencana</strong>
-        <a class="dashboard-stat-link" href="rencana.php">Buat rencana <span aria-hidden="true">&rarr;</span></a>
+        <strong class="dashboard-stat-value"><?= $total_menu_sesuai ?> <span style="font-size:0.95rem; font-weight:600; color:var(--teks-redup);">pilihan</span></strong>
+        <span class="dashboard-stat-note">
+          <?= $bmi ? 'Resep gizi seimbang cocok untuk BMI ' . h($bmi['kategori']) . '.' : 'Pilihan makanan bergizi seimbang.' ?>
+        </span>
+        <a class="dashboard-stat-link" href="menu.php">Pilih rekomendasi <span aria-hidden="true">&rarr;</span></a>
       <?php endif; ?>
     </article>
   </div>
@@ -214,42 +330,7 @@ include BASE_DIR . 'includes/header.php';
   </section>
 <?php endif; ?>
 
-<section class="dashboard-fitur" aria-labelledby="fitur-judul">
-  <div class="dashboard-section-heading">
-    <div>
-      <h3 id="fitur-judul">Fitur Calorie Lab</h3>
-      <p class="teks-redup">Pilih bagian yang ingin kamu buka.</p>
-    </div>
-  </div>
 
-<div class="dashboard-fitur-grid">
-  <a class="kartu kartu-link" href="bmi.php">
-    <span class="dashboard-card-label">01 &middot; UKUR</span>
-    <h3>Hitung BMI</h3>
-    <p>Cek kategori tubuh dan target kalori harian.</p>
-  </a>
-  <a class="kartu kartu-link" href="menu.php">
-    <span class="dashboard-card-label">02 &middot; PILIH</span>
-    <h3>Menu rekomendasi</h3>
-    <p>Menu yang cocok untuk kategori BMI-mu.</p>
-  </a>
-  <a class="kartu kartu-link" href="catatan.php">
-    <span class="dashboard-card-label">03 &middot; CATAT</span>
-    <h3>Catatan kalori</h3>
-    <p>Catat makanan dan lihat sisa kalori hari ini.</p>
-  </a>
-  <a class="kartu kartu-link" href="profil.php">
-    <span class="dashboard-card-label">04 &middot; PANTAU</span>
-    <h3>Profil dan perkembangan</h3>
-    <p>Catat berat badan dan pantau progres dietmu.</p>
-  </a>
-  <a class="kartu kartu-link" href="rencana.php">
-    <span class="dashboard-card-label">05 &middot; RENCANAKAN</span>
-    <h3>Rencana diet</h3>
-    <p>Tentukan target berat badan dan durasi dietmu.</p>
-  </a>
-</div>
-</section>
 
 <?php if (!empty($saran_pakar)): ?>
 <section style="margin-top: 28px;" aria-labelledby="saran-pakar-judul">

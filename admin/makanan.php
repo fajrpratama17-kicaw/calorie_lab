@@ -157,9 +157,11 @@ $halaman_saat_ini = max(1, min((int)($_GET['halaman'] ?? 1), $total_halaman));
 $offset = ($halaman_saat_ini - 1) * $per_halaman;
 
 $sql = "
-    SELECT md.*, GROUP_CONCAT(kb.nama SEPARATOR ', ') AS cocok_kategori,
+    SELECT md.*, u.nama AS pembuat_nama, u.gelar AS pembuat_gelar,
+           GROUP_CONCAT(kb.nama SEPARATOR ', ') AS cocok_kategori,
            GROUP_CONCAT(kb.kode SEPARATOR ',') AS kode_kategori
     FROM menu_diet md
+    LEFT JOIN users u ON u.id = md.pakar_id
     LEFT JOIN menu_kategori mk ON mk.menu_id = md.id
     LEFT JOIN kategori_bmi kb ON kb.id = mk.kategori_id
     WHERE 1=1
@@ -312,6 +314,13 @@ include BASE_DIR . 'includes/header.php';
             <div style="display: flex; justify-content: space-between; align-items: start; gap: 12px;">
               <div>
                 <h4 style="margin: 0 0 4px; font-size: 1.05rem;"><?= h($m['nama_menu']) ?></h4>
+                <?php if (!empty($m['pembuat_nama'])): ?>
+                  <div style="margin-bottom: 6px;">
+                    <span class="badge" style="background: #E0E7FF; color: #3730A3; font-size: 0.72rem; font-weight: 700; border: 1px solid #C7D2FE;">
+                      Disusun oleh: <?= h($m['pembuat_gelar'] ? $m['pembuat_gelar'] . ' ' : '') ?><?= h($m['pembuat_nama']) ?>
+                    </span>
+                  </div>
+                <?php endif; ?>
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                   <span class="badge-waktu badge-waktu-<?= h($m['waktu_makan']) ?>">
                     <?= ucfirst(h($m['waktu_makan'])) ?>

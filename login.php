@@ -540,7 +540,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div class="login-field">
-          <label for="password">Kata Sandi</label>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label for="password" style="margin-bottom: 0;">Kata Sandi</label>
+            <a href="<?= base_url('lupa_password.php') ?>" style="font-size: 0.78rem; color: var(--hijau); font-weight: 600; text-decoration: none;">Lupa kata sandi?</a>
+          </div>
           <div class="login-pass-group">
             <input type="password" id="password" name="password"
                    required placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"

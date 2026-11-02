@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/config/koneksi.php';
 wajib_login();
 
@@ -129,15 +129,20 @@ $judul = 'Rencana Diet';
 include BASE_DIR . 'includes/header.php';
 ?>
 
-<h2>Rencana diet</h2>
+<div class="rencana-page-header">
+  <h2>Rencana Diet</h2>
+  <p class="teks-redup">Program penurunan, kenaikan, atau pemeliharaan berat badan yang dipersonalisasi.</p>
+</div>
 
 <?php if ($pesan): ?><div class="alert sukses"><?= h($pesan) ?></div><?php endif; ?>
 <?php if ($error): ?><div class="alert error"><?= h($error) ?></div><?php endif; ?>
 
 <?php if (!$bmi): ?>
-  <div class="kosong">
-    Rencana dibuat dari data BMI-mu. Hitung BMI dulu ya.<br><br>
-    <a class="tombol" href="bmi.php">Hitung BMI dulu</a>
+  <div class="kosong-state">
+    <div class="kosong-state-ikon">📏</div>
+    <h3>Data BMI belum tersedia</h3>
+    <p>Rencana diet dibuat dari data BMI-mu. Hitung BMI terlebih dahulu.</p>
+    <a class="tombol" href="bmi.php">Hitung BMI sekarang &rarr;</a>
   </div>
 
 <?php elseif ($aktif):
@@ -152,37 +157,72 @@ include BASE_DIR . 'includes/header.php';
 
   <?php if ($durasi_selesai): ?>
     <div class="alert sukses" style="margin-bottom:18px">
-      <strong>Masa program telah selesai!</strong> Target durasi rencana dietmu telah terpenuhi. Kamu bisa menandai rencana ini sebagai selesai untuk menyimpan rekam jejaknya, atau membuat program baru.
+      <strong>🎉 Masa program telah selesai!</strong> Target durasi rencana dietmu telah terpenuhi. Tandai sebagai selesai untuk menyimpan rekam jejaknya, atau buat program baru.
     </div>
   <?php endif; ?>
 
-  <p class="teks-redup"><?= h($label[$aktif['tujuan']]) ?> &middot; <?= h(tgl($aktif['tanggal_mulai'])) ?> sampai <?= h(tgl($selesai_str)) ?></p>
-
-  <div class="ringkas">
-    <div class="kartu"><small>Berat awal</small><div class="angka-besar"><?= nf($aktif['berat_awal'], 1) ?></div>kg</div>
-    <div class="kartu"><small>Berat target</small><div class="angka-besar"><?= nf($aktif['berat_target'], 1) ?></div>kg</div>
-    <div class="kartu"><small>Target kalori harian</small><div class="angka-besar"><?= nf($aktif['target_kalori']) ?></div>kkal</div>
+  <!-- Header rencana aktif -->
+  <div class="rencana-aktif-header">
+    <div>
+      <div class="rencana-aktif-tujuan"><?= h($label[$aktif['tujuan']]) ?></div>
+      <div class="teks-redup" style="font-size:0.85rem; margin-top:4px;">
+        <?= h(tgl($aktif['tanggal_mulai'])) ?> &ndash; <?= h(tgl($selesai_str)) ?>
+        <?php if ($durasi_selesai): ?> &middot; <span class="badge" style="background:var(--normal);">Durasi tercapai</span><?php endif; ?>
+      </div>
+    </div>
+    <div class="rencana-hari-counter">
+      <span class="rencana-hari-angka"><?= $hari_ke ?></span>
+      <span class="rencana-hari-label">dari <?= (int)$aktif['durasi_hari'] ?> hari</span>
+    </div>
   </div>
 
-  <div class="progres"><div class="progres-isi" style="width:<?= min(100, $persen) ?>%"></div></div>
-  <p class="catatan">
-    Hari ke-<?= $hari_ke ?> dari <?= (int)$aktif['durasi_hari'] ?> hari (<?= min(100, $persen) ?>%)
-    <?php if ($durasi_selesai): ?> &middot; <span class="badge" style="background:var(--normal)">Durasi tercapai</span><?php endif; ?>
-  </p>
-
-  <div class="hasil" style="margin-top:20px">
-    <p>Pantau perkembangan beratmu secara berkala di halaman profil dan ikuti rekomendasi menu setiap hari.</p>
-    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-      <a class="tombol" href="menu.php">Lihat menu rekomendasi</a>
-      <a class="tombol garis" href="catatan.php">Catatan kalori</a>
-      <a class="tombol garis" href="profil.php">Perkembangan berat</a>
+  <!-- Stat cards -->
+  <div class="rencana-stat-grid">
+    <div class="rencana-stat-card">
+      <span class="rencana-stat-ikon">⚖️</span>
+      <div class="rencana-stat-isi">
+        <span class="rencana-stat-label">Berat Awal</span>
+        <span class="rencana-stat-nilai"><?= nf($aktif['berat_awal'], 1) ?> <small>kg</small></span>
+      </div>
     </div>
+    <div class="rencana-stat-card">
+      <span class="rencana-stat-ikon">🎯</span>
+      <div class="rencana-stat-isi">
+        <span class="rencana-stat-label">Berat Target</span>
+        <span class="rencana-stat-nilai"><?= nf($aktif['berat_target'], 1) ?> <small>kg</small></span>
+      </div>
+    </div>
+    <div class="rencana-stat-card">
+      <span class="rencana-stat-ikon">🔥</span>
+      <div class="rencana-stat-isi">
+        <span class="rencana-stat-label">Target Kalori</span>
+        <span class="rencana-stat-nilai"><?= nf($aktif['target_kalori']) ?> <small>kkal/hari</small></span>
+      </div>
+    </div>
+  </div>
 
-    <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;border-top:1px solid var(--garis);padding-top:14px">
+  <!-- Progress bar durasi -->
+  <div class="rencana-progress-section">
+    <div class="rencana-progress-label">
+      <span>Progres durasi</span>
+      <strong><?= min(100, $persen) ?>%</strong>
+    </div>
+    <div class="progres" style="margin-top:6px"><div class="progres-isi" style="width:<?= min(100, $persen) ?>%"></div></div>
+  </div>
+
+  <!-- Aksi navigasi -->
+  <div class="kartu rencana-aksi-card">
+    <p style="margin-bottom:14px; color:var(--teks-redup); font-size:0.9rem;">Pantau perkembangan beratmu secara berkala dan ikuti rekomendasi menu setiap hari.</p>
+    <div class="rencana-aksi-nav">
+      <a class="tombol" href="menu.php">🍽️ Menu Rekomendasi</a>
+      <a class="tombol tombol-sekunder" href="catatan.php">📓 Catatan Kalori</a>
+      <a class="tombol tombol-sekunder" href="profil.php">📊 Perkembangan Berat</a>
+    </div>
+    <div class="rencana-aksi-selesai">
       <form method="post" style="display:inline">
         <input type="hidden" name="aksi" value="selesai">
         <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
-        <button type="submit" class="tombol" onclick="return confirm('Tandai rencana diet ini sebagai selesai?')">Tandai selesai</button>
+        <button type="submit" class="tombol" onclick="return confirm('Tandai rencana diet ini sebagai selesai?')">✅ Tandai selesai</button>
       </form>
       <form method="post" style="display:inline">
         <input type="hidden" name="aksi" value="batal">
@@ -195,50 +235,111 @@ include BASE_DIR . 'includes/header.php';
 <?php else:
     $tm = $bmi['tinggi_cm'] / 100; ?>
 
-  <div class="hasil" style="margin-bottom:20px">
-    <small>Data awalmu (dari hitung BMI terakhir)</small>
-    <p style="margin-top:6px">
-      Berat <b><?= nf($bmi['berat_kg'], 1) ?> kg</b> &middot; Tinggi <b><?= nf($bmi['tinggi_cm'], 0) ?> cm</b> &middot; Usia <b><?= (int)$bmi['usia'] ?></b> &middot;
-      BMI <b><?= nf($bmi['bmi'], 1) ?></b> <span class="badge kategori-<?= h($bmi['kat_kode']) ?>"><?= h($bmi['kat_nama']) ?></span>
-    </p>
-    <p class="catatan">Rentang berat yang masuk BMI normal untuk tinggimu: sekitar <?= nf(18.5 * $tm * $tm, 1) ?> sampai <?= nf(25 * $tm * $tm, 1) ?> kg.
-      Berubah? <a href="bmi.php">Hitung BMI lagi</a>.</p>
-  </div>
+  <div class="rencana-two-col">
 
-  <div class="kotak-form" style="max-width:none">
-    <form method="post">
-      <input type="hidden" name="aksi" value="buat">
-      <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
-
-      <label for="tujuan">Tujuan</label>
-      <select id="tujuan" name="tujuan">
-        <option value="turun" <?= ($_POST['tujuan'] ?? '') === 'turun' ? 'selected' : '' ?>>Menurunkan berat badan</option>
-        <option value="naik" <?= ($_POST['tujuan'] ?? '') === 'naik' ? 'selected' : '' ?>>Menaikkan berat badan</option>
-        <option value="pertahankan" <?= ($_POST['tujuan'] ?? '') === 'pertahankan' ? 'selected' : '' ?>>Mempertahankan berat badan</option>
-      </select>
-
-      <div id="kotak-target">
-        <label for="berat_target">Berat target (kg)</label>
-        <input type="number" id="berat_target" name="berat_target" step="0.1" value="<?= h($_POST['berat_target'] ?? '') ?>">
+    <!-- Kolom kiri: Data BMI & form -->
+    <div class="rencana-col-form">
+      <div class="kartu rencana-bmi-info">
+        <div class="rencana-bmi-header">
+          <h3 style="font-size:1rem;">Data awal dari hitung BMI</h3>
+          <a href="bmi.php" class="tombol kecil tombol-sekunder" style="font-size:0.78rem;">Ukur ulang</a>
+        </div>
+        <div class="rencana-bmi-stats">
+          <div class="rencana-bmi-stat-item">
+            <span class="teks-redup">Berat</span>
+            <strong><?= nf($bmi['berat_kg'], 1) ?> kg</strong>
+          </div>
+          <div class="rencana-bmi-stat-item">
+            <span class="teks-redup">Tinggi</span>
+            <strong><?= nf($bmi['tinggi_cm'], 0) ?> cm</strong>
+          </div>
+          <div class="rencana-bmi-stat-item">
+            <span class="teks-redup">Usia</span>
+            <strong><?= (int)$bmi['usia'] ?> th</strong>
+          </div>
+          <div class="rencana-bmi-stat-item">
+            <span class="teks-redup">BMI</span>
+            <strong><?= nf($bmi['bmi'], 1) ?> <span class="badge kategori-<?= h($bmi['kat_kode']) ?>" style="font-size:0.7rem;"><?= h($bmi['kat_nama']) ?></span></strong>
+          </div>
+        </div>
+        <p class="catatan" style="margin-top:10px;">Rentang berat normal untuk tinggimu: <strong><?= nf(18.5 * $tm * $tm, 1) ?> – <?= nf(25 * $tm * $tm, 1) ?> kg</strong></p>
       </div>
 
-      <label for="durasi">Durasi</label>
-      <select id="durasi" name="durasi">
-        <?php foreach ([30 => '1 bulan', 60 => '2 bulan', 90 => '3 bulan', 180 => '6 bulan'] as $hr => $tx): ?>
-          <option value="<?= $hr ?>" <?= (int)($_POST['durasi'] ?? 90) === $hr ? 'selected' : '' ?>><?= $tx ?></option>
-        <?php endforeach; ?>
-      </select>
+      <div class="kartu rencana-form-card">
+        <h3 style="margin-bottom:4px;">Buat Rencana Diet Baru</h3>
+        <p class="teks-redup" style="font-size:0.85rem; margin-bottom:18px;">Laju aman: turun maks 1 kg/minggu &middot; naik maks 0,5 kg/minggu.</p>
+        <form method="post">
+          <input type="hidden" name="aksi" value="buat">
+          <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
 
-      <label for="aktivitas">Aktivitas harian</label>
-      <select id="aktivitas" name="aktivitas">
-        <option value="1.2">Jarang olahraga (banyak duduk)</option>
-        <option value="1.375" <?= ($_POST['aktivitas'] ?? '') === '1.375' ? 'selected' : '' ?>>Olahraga ringan 1-3x seminggu</option>
-        <option value="1.55" <?= ($_POST['aktivitas'] ?? '') === '1.55' ? 'selected' : '' ?>>Olahraga sedang 3-5x seminggu</option>
-      </select>
+          <label for="tujuan">Tujuan program</label>
+          <select id="tujuan" name="tujuan">
+            <option value="turun" <?= ($_POST['tujuan'] ?? '') === 'turun' ? 'selected' : '' ?>>Menurunkan berat badan</option>
+            <option value="naik" <?= ($_POST['tujuan'] ?? '') === 'naik' ? 'selected' : '' ?>>Menaikkan berat badan</option>
+            <option value="pertahankan" <?= ($_POST['tujuan'] ?? '') === 'pertahankan' ? 'selected' : '' ?>>Mempertahankan berat badan</option>
+          </select>
 
-      <button type="submit" class="tombol penuh">Buat rencana</button>
-    </form>
-    <p class="catatan">Laju perubahan dibatasi supaya aman: turun maksimal sekitar 1 kg per minggu, naik sekitar 0,5 kg per minggu. Perhitungan bersifat perkiraan.</p>
+          <div id="kotak-target" style="margin-top:14px;">
+            <label for="berat_target">Berat target (kg)</label>
+            <div class="input-unit-wrapper">
+              <input type="number" id="berat_target" name="berat_target" step="0.1" min="20" max="250" placeholder="Misal: 65" value="<?= h($_POST['berat_target'] ?? '') ?>">
+              <span class="unit-suffix">kg</span>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;">
+            <label for="durasi">Durasi program</label>
+            <select id="durasi" name="durasi">
+              <?php foreach ([30 => '1 bulan', 60 => '2 bulan', 90 => '3 bulan', 180 => '6 bulan'] as $hr => $tx): ?>
+                <option value="<?= $hr ?>" <?= (int)($_POST['durasi'] ?? 90) === $hr ? 'selected' : '' ?>><?= $tx ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+
+          <div style="margin-top:14px;">
+            <label for="aktivitas">Aktivitas harian</label>
+            <select id="aktivitas" name="aktivitas">
+              <option value="1.2">Jarang olahraga (banyak duduk)</option>
+              <option value="1.375" <?= ($_POST['aktivitas'] ?? '') === '1.375' ? 'selected' : '' ?>>Olahraga ringan 1-3x seminggu</option>
+              <option value="1.55" <?= ($_POST['aktivitas'] ?? '') === '1.55' ? 'selected' : '' ?>>Olahraga sedang 3-5x seminggu</option>
+            </select>
+          </div>
+
+          <button type="submit" class="tombol penuh" style="margin-top:20px;">Buat rencana &rarr;</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Kolom kanan: Panduan -->
+    <div class="rencana-col-guide">
+      <div class="kartu rencana-panduan-card">
+        <h3 style="margin-bottom:14px;">💡 Panduan Singkat</h3>
+        <div class="rencana-panduan-item">
+          <div class="rencana-panduan-ikon">📉</div>
+          <div>
+            <strong>Menurunkan berat</strong>
+            <p class="teks-redup" style="font-size:0.85rem; margin-top:3px;">Cocok jika BMI-mu di atas 18,5. Target berat harus lebih rendah dari berat sekarang dengan laju aman maks 1 kg/minggu.</p>
+          </div>
+        </div>
+        <div class="rencana-panduan-item">
+          <div class="rencana-panduan-ikon">📈</div>
+          <div>
+            <strong>Menaikkan berat</strong>
+            <p class="teks-redup" style="font-size:0.85rem; margin-top:3px;">Cocok jika BMI-mu di bawah 25. Target berat harus lebih tinggi dari berat sekarang dengan laju aman maks 0,5 kg/minggu.</p>
+          </div>
+        </div>
+        <div class="rencana-panduan-item">
+          <div class="rencana-panduan-ikon">⚖️</div>
+          <div>
+            <strong>Mempertahankan berat</strong>
+            <p class="teks-redup" style="font-size:0.85rem; margin-top:3px;">Cocok untuk semua kategori BMI. Sistem akan menghitung kebutuhan kalori tanpa penyesuaian penurunan/kenaikan.</p>
+          </div>
+        </div>
+        <hr style="margin:16px 0; border-color:var(--garis);">
+        <p class="catatan">Perhitungan menggunakan rumus Mifflin-St Jeor. Bersifat perkiraan dan bukan pengganti saran ahli gizi atau dokter.</p>
+      </div>
+    </div>
+
   </div>
 
   <script>
