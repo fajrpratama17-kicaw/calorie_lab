@@ -1,33 +1,6 @@
 <?php
 require_once __DIR__ . '/config/koneksi.php';
 
-// ── Inisialisasi akun default (admin & pakar) ──────────────────────────────
-try {
-    $cek_admin = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-    $cek_admin->execute(['admin@calorielab.com']);
-    if (!$cek_admin->fetch()) {
-        $pdo->prepare("INSERT INTO users (nama, email, password_hash, role) VALUES (?, ?, ?, 'admin')")
-            ->execute(['Administrator Utama', 'admin@calorielab.com', password_hash('admin123', PASSWORD_DEFAULT)]);
-    }
-} catch (Exception $e) {}
-
-try {
-    $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('user','admin','pakar') NOT NULL DEFAULT 'user'");
-} catch (Exception $e) {}
-
-try {
-    $cek_pakar = $pdo->prepare("SELECT id, role FROM users WHERE LOWER(email) = ?");
-    $cek_pakar->execute(['pakar@calorielab.com']);
-    $akun_pakar = $cek_pakar->fetch();
-    if (!$akun_pakar) {
-        $pdo->prepare("INSERT INTO users (nama, email, password_hash, role) VALUES (?, ?, ?, 'pakar')")
-            ->execute(['Pakar Gizi', 'pakar@calorielab.com', password_hash('pakar123', PASSWORD_DEFAULT)]);
-    } elseif ($akun_pakar['role'] !== 'pakar') {
-        $pdo->prepare("UPDATE users SET role = 'pakar' WHERE LOWER(email) = ?")
-            ->execute(['pakar@calorielab.com']);
-    }
-} catch (Exception $e) {}
-
 // ── Jika sudah login, arahkan ke halaman yang sesuai ─────────────────────
 if (isset($_SESSION['user_id'])) {
     $r = $_SESSION['role'] ?? 'user';

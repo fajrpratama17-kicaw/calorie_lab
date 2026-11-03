@@ -84,10 +84,11 @@ $menu_populer = $pdo->query("
 // ── 5. Saran Terakhir dari Pakar yang Sedang Login ───────────────
 $pakar_id = (int)$_SESSION['user_id'];
 $saran_terbaru = $pdo->prepare("
-    SELECT id, judul, isi_saran, target_kategori, created_at
-    FROM saran_pakar
-    WHERE pakar_id = ?
-    ORDER BY created_at DESC
+    SELECT sp.id, sp.judul, sp.isi_saran, sp.target_kategori, sp.user_id, sp.created_at, u.nama AS nama_target_user
+    FROM saran_pakar sp
+    LEFT JOIN users u ON u.id = sp.user_id
+    WHERE sp.pakar_id = ?
+    ORDER BY sp.created_at DESC
     LIMIT 4
 ");
 $saran_terbaru->execute([$pakar_id]);
@@ -295,9 +296,15 @@ $total_tinjauan_pakar = (int)$pdo->query("SELECT COUNT(*) FROM catatan_gizi WHER
           <div>
             <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
               <strong style="color: var(--gelap); font-size: 0.92rem; line-height: 1.4;"><?= h($s['judul']) ?></strong>
-              <span class="badge" style="background: var(--mint); color: #264A38; font-size: 0.7rem; padding: 2px 8px; white-space: nowrap;">
-                <?= ucfirst(h($s['target_kategori'])) ?>
-              </span>
+              <?php if (!empty($s['user_id'])): ?>
+                <span class="badge" style="background: #EDE9FE; color: #5B21B6; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; white-space: nowrap; border: 1px solid #DDD6FE;">
+                  Khusus: <?= h($s['nama_target_user'] ?? 'User') ?>
+                </span>
+              <?php else: ?>
+                <span class="badge" style="background: var(--mint); color: #264A38; font-size: 0.7rem; padding: 2px 8px; white-space: nowrap;">
+                  <?= ucfirst(h($s['target_kategori'])) ?>
+                </span>
+              <?php endif; ?>
             </div>
             <p class="teks-redup" style="font-size: 0.84rem; margin: 0 0 12px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
               <?= h($s['isi_saran']) ?>

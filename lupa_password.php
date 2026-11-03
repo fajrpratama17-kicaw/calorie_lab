@@ -67,17 +67,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($hasil_kirim['sukses']) {
                 $email_terkirim = true;
-                $pesan = 'Tautan reset kata sandi telah berhasil dikirimkan ke <strong>' . h($user['email']) . '</strong>. Silakan periksa Kotak Masuk (Inbox) atau folder Spam Anda.';
+                $pesan = 'Tautan reset kata sandi telah berhasil dikirimkan ke <strong>' . h($user['email']) . '</strong>. Silakan periksa Kotak Masuk (Inbox) atau folder Spam email Anda.';
             } else {
-                // Jika kredensial Google belum dimasukkan atau koneksi SMTP gagal
-                $fallback_link = $link_reset;
-                if (!empty($hasil_kirim['is_placeholder'])) {
-                    $pesan = 'Permintaan reset kata sandi berhasil diproses.';
-                    $info_tambahan = 'Pengiriman email SMTP Gmail belum aktif karena Sandi Aplikasi (App Password) di <code>config/email.php</code> masih default. Untuk pengujian lokal saat ini, gunakan tautan di bawah ini:';
-                } else {
-                    $pesan = 'Tautan reset telah dibuat.';
-                    $info_tambahan = 'Gagal mengirim email via server SMTP (' . h($hasil_kirim['error']) . '). Anda tetap dapat melanjutkan pengujian dengan tautan langsung di bawah ini:';
-                }
+                $error = 'Gagal mengirim email: ' . h($hasil_kirim['error']);
             }
         } else {
             // Email tidak ditemukan
@@ -293,16 +285,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     .email-sent-badge {
       display: flex;
-      align-items: center;
-      gap: 10px;
-      background: #E8F2EC;
-      color: #264A38;
-      border: 1px solid #B8D9C5;
+      align-items: flex-start;
+      gap: 12px;
+      background: #F0FDF4;
+      color: #166534;
+      border: 1px solid #BBF7D0;
       border-radius: 14px;
       padding: 14px 16px;
-      margin-bottom: 20px;
-      font-size: 0.88rem;
+      margin-top: 18px;
+      font-size: 0.85rem;
       line-height: 1.5;
+    }
+
+    .login-field input[readonly] {
+      background-color: #F1F5F9 !important;
+      color: #64748B !important;
+      border-color: #CBD5E1 !important;
+      cursor: not-allowed;
+    }
+
+    .input-readonly-note {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 0.78rem;
+    }
+    .input-readonly-note a {
+      color: var(--hijau);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .input-readonly-note a:hover {
+      text-decoration: underline;
     }
 
     .login-submit {
@@ -425,48 +440,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <p>Masukkan alamat email akun Calorie Lab Anda untuk menerima tautan pemulihan kata sandi.</p>
       </div>
 
-      <?php if ($email_terkirim): ?>
-        <div class="email-sent-badge">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          <div><?= $pesan ?></div>
-        </div>
-      <?php elseif ($pesan): ?>
-        <div class="login-alert sukses"><?= $pesan ?></div>
-      <?php endif; ?>
-
       <?php if ($error): ?>
         <div class="login-alert error"><?= h($error) ?></div>
       <?php endif; ?>
 
-      <?php if ($fallback_link): ?>
-        <!-- Card Pengujian Lokal saat SMTP belum aktif -->
-        <div class="demo-reset-box">
-          <div class="demo-reset-badge">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Tautan Cadangan (Pengujian Lokal)
-          </div>
-          <p><?= $info_tambahan ?></p>
-          <a href="<?= $fallback_link ?>" class="demo-reset-btn">
-            Buka Halaman Reset Kata Sandi &rarr;
-          </a>
-        </div>
-      <?php endif; ?>
-
-      <form method="post" id="lupa-form" style="margin-top: <?= ($fallback_link || $email_terkirim) ? '20px' : '0' ?>;">
+      <form method="post" id="lupa-form">
         <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
 
         <div class="login-field">
           <label for="email">Alamat Email Terdaftar</label>
           <input type="email" id="email" name="email"
                  value="<?= h($email_input) ?>"
-                 required autofocus placeholder="nama@email.com"
+                 <?= $email_terkirim ? 'readonly' : 'required autofocus' ?>
+                 placeholder="nama@email.com"
                  autocomplete="email">
+          <?php if ($email_terkirim): ?>
+            <div class="input-readonly-note">
+              <span style="color: var(--teks-redup);">Tautan telah dikirim ke email ini.</span>
+              <a href="<?= base_url('lupa_password.php') ?>">Ganti email lain</a>
+            </div>
+          <?php endif; ?>
         </div>
 
         <button type="submit" class="login-submit">
-          <?= ($email_terkirim || $fallback_link) ? 'Kirim Ulang Tautan' : 'Kirim Tautan Reset' ?>
+          <?= $email_terkirim ? 'Kirim Ulang Tautan' : 'Kirim Tautan Reset' ?>
         </button>
       </form>
+
+      <?php if ($email_terkirim): ?>
+        <div class="email-sent-badge">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:1px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <div>
+            <strong>Email Terkirim!</strong><br>
+            <?= $pesan ?>
+          </div>
+        </div>
+      <?php endif; ?>
 
       <a href="<?= base_url('login.php') ?>" class="login-back">&larr; Kembali ke halaman masuk</a>
     </div>

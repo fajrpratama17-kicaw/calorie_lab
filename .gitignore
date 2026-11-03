@@ -3,3 +3,8 @@
 Thumbs.db
 
 sess_*
+
+# Kredensial privat & konfigurasi sensitif
+config/secret.php
+.env
+

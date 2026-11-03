@@ -137,6 +137,12 @@ include BASE_DIR . 'includes/header.php';
     <h2>Rencana Diet</h2>
     <p>Program penurunan, kenaikan, atau pemeliharaan berat badan yang dipersonalisasi.</p>
   </div>
+  <div style="margin-left: auto; flex-shrink: 0;">
+    <a href="<?= base_url('profil.php') ?>" class="tombol sekunder kecil" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-pil); font-weight: 700; text-decoration: none;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Kembali ke Profil
+    </a>
+  </div>
 </div>
 
 <?php if ($pesan): ?><div class="alert sukses"><?= h($pesan) ?></div><?php endif; ?>

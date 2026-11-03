@@ -23,6 +23,39 @@ $q = $pdo->prepare("SELECT * FROM rencana_diet WHERE user_id = ? AND status = 'a
 $q->execute([$uid]);
 $aktif = $q->fetch();
 
+// ── Tab Aktif di Profil: 'progres' (default) atau 'saran' ────────────────
+$tab_profil = $_GET['tab'] ?? 'progres';
+if (!in_array($tab_profil, ['progres', 'saran'], true)) {
+    $tab_profil = 'progres';
+}
+
+// Ambil info BMI pengguna untuk rekomendasi kategori
+$st_bmi = $pdo->prepare("
+    SELECT rb.bmi, kb.nama AS kat_nama, kb.kode AS kat_kode 
+    FROM riwayat_bmi rb 
+    LEFT JOIN kategori_bmi kb ON kb.id = rb.kategori_id 
+    WHERE rb.user_id = ? 
+    ORDER BY rb.id DESC LIMIT 1
+");
+$st_bmi->execute([$uid]);
+$bmi_info = $st_bmi->fetch();
+$kode_bmi_user = $bmi_info['kat_kode'] ?? '';
+
+// Ambil seluruh saran untuk pengguna ini (personal dan kategori yang cocok)
+$daftar_saran_user = [];
+try {
+    $st_saran = $pdo->prepare("
+        SELECT sp.*, u.nama AS nama_pakar, u.gelar AS gelar_pakar
+        FROM saran_pakar sp
+        JOIN users u ON u.id = sp.pakar_id
+        WHERE sp.user_id = ? OR (sp.user_id IS NULL AND sp.target_kategori IN ('semua', ?))
+        ORDER BY (sp.user_id = ?) DESC, sp.created_at DESC
+    ");
+    $st_saran->execute([$uid, $kode_bmi_user, $uid]);
+    $daftar_saran_user = $st_saran->fetchAll();
+} catch (Exception $e) {}
+$total_saran_user = count($daftar_saran_user);
+
 $error = '';
 $pesan = $_SESSION['pesan'] ?? '';
 unset($_SESSION['pesan']);
@@ -191,6 +224,23 @@ include BASE_DIR . 'includes/header.php';
   </div>
 </div>
 
+<!-- DUAL-TAB PROFIL: PROGRES & SARAN PAKAR -->
+<div style="display: flex; gap: 10px; margin-bottom: 22px; border-bottom: 2px solid var(--garis); padding-bottom: 14px; flex-wrap: wrap; align-items: center;">
+  <a href="<?= base_url('profil.php?tab=progres') ?>" 
+     class="tombol <?= $tab_profil === 'progres' ? '' : 'sekunder' ?>" 
+     style="display: inline-flex; align-items: center; gap: 8px; font-weight: 700; border-radius: var(--radius-pil); padding: 8px 18px; font-size: 0.9rem;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Progres &amp; Timbangan
+  </a>
+  <a href="<?= base_url('profil.php?tab=saran') ?>" 
+     class="tombol <?= $tab_profil === 'saran' ? '' : 'sekunder' ?>" 
+     style="display: inline-flex; align-items: center; gap: 8px; font-weight: 700; border-radius: var(--radius-pil); padding: 8px 18px; font-size: 0.9rem;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    Saran &amp; Catatan Pakar Gizi (<?= $total_saran_user ?>)
+  </a>
+</div>
+
+<?php if ($tab_profil === 'progres'): ?>
 <?php if ($pesan): ?><div class="alert sukses"><?= h($pesan) ?></div><?php endif; ?>
 <?php if ($error): ?><div class="alert error"><?= h($error) ?></div><?php endif; ?>
 
@@ -442,6 +492,68 @@ include BASE_DIR . 'includes/header.php';
       pasangPaginasi('rencana-lama-list', 'rencana-lama-pagin', 3);
     });
   </script>
+<?php endif; ?>
+<?php else: ?>
+  <!-- ══════════════════════════════════════════════════════════
+       TAB 2: SARAN & CATATAN PAKAR GIZI
+       ══════════════════════════════════════════════════════════ -->
+  <div style="margin-bottom: 22px;">
+    <h3 style="margin: 0 0 4px; font-size: 1.25rem; font-weight: 800; color: var(--gelap);">Panduan &amp; Saran Edukasi Gizi</h3>
+    <p class="teks-redup" style="margin: 0; font-size: 0.88rem;">Rekomendasi nutrisi personal dan panduan klinis dari pakar gizi untuk mendukung progres kesehatan Anda.</p>
+  </div>
+
+  <?php if (empty($daftar_saran_user)): ?>
+    <div class="kosong-state" style="background: #FFFFFF !important; border: 1px solid var(--garis); padding: 48px 24px; border-radius: var(--radius-kartu);">
+      <div class="kosong-state-ikon" style="background: var(--latar); color: var(--teks-redup);">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <h3 style="margin: 14px 0 6px;">Belum Ada Saran Masuk</h3>
+      <p style="margin: 0; color: var(--teks-redup); font-size: 0.9rem;">Pakar gizi belum memberikan catatan saran khusus untuk akun Anda saat ini.</p>
+    </div>
+  <?php else: ?>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start;">
+      <?php foreach ($daftar_saran_user as $s): 
+        $is_personal = !empty($s['user_id']) && (int)$s['user_id'] === (int)$uid;
+      ?>
+        <div class="kartu" style="padding: 22px; display: flex; flex-direction: column; height: 100%; background: #FFFFFF !important; border: 1px solid var(--garis); border-left: 4px solid <?= $is_personal ? 'var(--hijau)' : '#818CF8' ?>;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px;">
+            <h4 style="margin: 0; font-size: 1.02rem; font-weight: 800; color: var(--gelap); line-height: 1.4;"><?= h($s['judul']) ?></h4>
+            <span style="font-size: 0.74rem; color: var(--teks-redup); white-space: nowrap; flex-shrink: 0; margin-top: 2px;">
+              <?= date('d M Y', strtotime($s['created_at'])) ?>
+            </span>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <?php if ($is_personal): ?>
+              <span class="badge" style="background: var(--mint); color: #264A38; font-weight: 800; font-size: 0.72rem; padding: 3px 10px; border: 1px solid #A7F3D0; display: inline-flex; align-items: center; gap: 4px;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Personal Khusus Anda
+              </span>
+            <?php elseif ($s['target_kategori'] === 'semua'): ?>
+              <span class="badge" style="background: #E0E7FF; color: #3730A3; font-weight: 700; font-size: 0.72rem; padding: 3px 10px;">
+                Panduan Gizi Umum
+              </span>
+            <?php else: ?>
+              <span class="badge kategori-<?= h($s['target_kategori']) ?>" style="font-size: 0.72rem; font-weight: 700; padding: 3px 10px;">
+                Rekomendasi BMI <?= ucfirst(h($s['target_kategori'])) ?>
+              </span>
+            <?php endif; ?>
+          </div>
+
+          <p style="margin: 0; font-size: 0.9rem; color: var(--gelap); line-height: 1.65; white-space: pre-wrap; flex: 1;"><?= h($s['isi_saran']) ?></p>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--garis); padding-top: 12px; margin-top: 16px;">
+            <span style="font-size: 0.78rem; font-weight: 700; color: <?= $is_personal ? 'var(--hijau)' : '#4F46E5' ?>;">
+              Oleh: <?= h(($s['gelar_pakar'] ? $s['gelar_pakar'] . ' ' : '') . $s['nama_pakar']) ?>
+            </span>
+            <span class="badge" style="background: var(--latar); font-size: 0.7rem; color: var(--teks-redup);">
+              Pakar Gizi
+            </span>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
 <?php endif; ?>
 
 <p class="catatan" style="margin-top:20px;">Perhitungan bersifat perkiraan dan edukatif, bukan pengganti saran dokter atau ahli gizi.</p>
