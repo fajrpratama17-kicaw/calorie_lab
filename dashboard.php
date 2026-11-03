@@ -42,14 +42,6 @@ if ($total_menu_sesuai === 0) {
     }
 }
 
-$st = $pdo->prepare('SELECT mh.id, COUNT(i.id) AS jumlah_menu
-                     FROM menu_harian mh
-                     LEFT JOIN menu_harian_item i ON i.menu_harian_id = mh.id
-                     WHERE mh.user_id = ? AND mh.tanggal = ?
-                     GROUP BY mh.id');
-$st->execute([$uid, $hari_ini]);
-$menu_harian = $st->fetch(PDO::FETCH_ASSOC);
-
 // Berat terakhir yang dicatat pada rencana aktif
 $berat_terakhir = null;
 if ($rencana) {
@@ -133,16 +125,16 @@ if ($rencana) {
 $jam = (int)date('H');
 if ($jam >= 4 && $jam < 11) {
     $sapaan = 'Selamat Pagi';
-    $ikon_waktu = '🌅';
+    $ikon_waktu = 'pagi';
 } elseif ($jam >= 11 && $jam < 15) {
     $sapaan = 'Selamat Siang';
-    $ikon_waktu = '☀️';
+    $ikon_waktu = 'siang';
 } elseif ($jam >= 15 && $jam < 18) {
     $sapaan = 'Selamat Sore';
-    $ikon_waktu = '🌇';
+    $ikon_waktu = 'sore';
 } else {
     $sapaan = 'Selamat Malam';
-    $ikon_waktu = '🌙';
+    $ikon_waktu = 'malam';
 }
 
 // Kategori warna BMI klinis
@@ -203,7 +195,18 @@ include BASE_DIR . 'includes/header.php';
 
 <header class="dashboard-heading">
   <div>
-    <p class="dashboard-eyebrow"><?= $ikon_waktu ?> <?= $sapaan ?>, <?= h($_SESSION['nama'] ?? 'Pengguna') ?></p>
+    <p class="dashboard-eyebrow">
+      <?php
+      $svg_waktu = [
+        'pagi'  => '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+        'siang' => '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+        'sore'  => '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/><polyline points="16 5 12 9 8 5"/></svg>',
+        'malam' => '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+      ];
+      echo $svg_waktu[$ikon_waktu] ?? '';
+      ?>
+      <?= $sapaan ?>, <?= h($_SESSION['nama'] ?? 'Pengguna') ?>
+    </p>
     <h2>Dashboard Kesehatan</h2>
     <p class="teks-redup">Pantau kuota kalori, progres berat badan, dan bimbingan nutrisi harianmu.</p>
   </div>
@@ -222,7 +225,9 @@ include BASE_DIR . 'includes/header.php';
     <article class="dashboard-stat dashboard-stat-highlight">
       <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
         <span class="dashboard-stat-label">Target Kalori Harian</span>
-        <span class="stat-icon-wrapper" title="Target Kalori" aria-hidden="true">🔥</span>
+        <span class="stat-icon-wrapper" title="Target Kalori" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </span>
       </div>
       <?php if ($target_kalori): ?>
         <strong class="dashboard-stat-value"><?= number_format((float)$target_kalori, 0, ',', '.') ?> <span style="font-size:0.95rem; font-weight:600; color:var(--teks-redup);">kkal</span></strong>
@@ -246,7 +251,9 @@ include BASE_DIR . 'includes/header.php';
     <article class="dashboard-stat">
       <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
         <span class="dashboard-stat-label">Status BMI Terkini</span>
-        <span class="stat-icon-wrapper" title="Indeks Massa Tubuh" aria-hidden="true">⚖️</span>
+        <span class="stat-icon-wrapper" title="Indeks Massa Tubuh" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="21"/><path d="M5 21h14"/><path d="M5 12H2l3-3 3 3"/><path d="M19 12h3l-3-3-3 3"/></svg>
+        </span>
       </div>
       <?php if ($bmi): ?>
         <strong class="dashboard-stat-value"><?= h(number_format((float)$bmi['bmi'], 1, ',', '.')) ?></strong>
@@ -268,7 +275,9 @@ include BASE_DIR . 'includes/header.php';
     <article class="dashboard-stat">
       <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
         <span class="dashboard-stat-label">Program Diet Aktif</span>
-        <span class="stat-icon-wrapper" title="Rencana Diet" aria-hidden="true">🎯</span>
+        <span class="stat-icon-wrapper" title="Rencana Diet" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </span>
       </div>
       <?php if ($rencana): ?>
         <strong class="dashboard-stat-plan" style="margin-top:8px;"><?= h($label_tujuan[$rencana['tujuan']] ?? $rencana['tujuan']) ?></strong>
@@ -291,21 +300,15 @@ include BASE_DIR . 'includes/header.php';
     <article class="dashboard-stat">
       <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
         <span class="dashboard-stat-label">Rekomendasi Menu</span>
-        <span class="stat-icon-wrapper" title="Menu Rekomendasi" aria-hidden="true">🥗</span>
+        <span class="stat-icon-wrapper" title="Menu Rekomendasi" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+        </span>
       </div>
-      <?php if ($menu_harian && (int)$menu_harian['jumlah_menu'] > 0): ?>
-        <strong class="dashboard-stat-value"><?= (int)$menu_harian['jumlah_menu'] ?> <span style="font-size:0.95rem; font-weight:600; color:var(--teks-redup);">menu harian</span></strong>
-        <span class="dashboard-stat-note">
-          Telah tersimpan dalam rencana makan hari ini.
-        </span>
-        <a class="dashboard-stat-link" href="menu.php?hari_ini=1">Buka menu harian <span aria-hidden="true">&rarr;</span></a>
-      <?php else: ?>
-        <strong class="dashboard-stat-value"><?= $total_menu_sesuai ?> <span style="font-size:0.95rem; font-weight:600; color:var(--teks-redup);">pilihan</span></strong>
-        <span class="dashboard-stat-note">
-          <?= $bmi ? 'Resep gizi seimbang cocok untuk BMI ' . h($bmi['kategori']) . '.' : 'Pilihan makanan bergizi seimbang.' ?>
-        </span>
-        <a class="dashboard-stat-link" href="menu.php">Pilih rekomendasi <span aria-hidden="true">&rarr;</span></a>
-      <?php endif; ?>
+      <strong class="dashboard-stat-value"><?= $total_menu_sesuai ?> <span style="font-size:0.95rem; font-weight:600; color:var(--teks-redup);">pilihan</span></strong>
+      <span class="dashboard-stat-note">
+        <?= $bmi ? 'Resep gizi seimbang cocok untuk BMI ' . h($bmi['kategori']) . '.' : 'Pilihan makanan bergizi seimbang.' ?>
+      </span>
+      <a class="dashboard-stat-link" href="menu.php">Pilih rekomendasi <span aria-hidden="true">&rarr;</span></a>
     </article>
   </div>
 </section>
@@ -318,17 +321,6 @@ include BASE_DIR . 'includes/header.php';
   </div>
   <a class="tombol" href="<?= h($langkah['tautan']) ?>"><?= h($langkah['tombol']) ?></a>
 </section>
-
-<?php if ($menu_harian && (int)$menu_harian['jumlah_menu'] > 0): ?>
-  <section class="menu-harian-dashboard" aria-labelledby="menu-harian-judul">
-    <div>
-      <span class="dashboard-eyebrow">RENCANA MENU &middot; <?= h(date('d-m-Y', strtotime($hari_ini))) ?></span>
-      <h3 id="menu-harian-judul">Menu harianmu tersimpan</h3>
-      <p><?= (int)$menu_harian['jumlah_menu'] ?> pilihan menu tersimpan. Rencana ini tidak otomatis masuk ke catatan makanan.</p>
-    </div>
-    <a class="tombol tombol-sekunder" href="menu.php?hari_ini=1">Buka menu harian</a>
-  </section>
-<?php endif; ?>
 
 
 

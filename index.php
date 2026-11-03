@@ -23,38 +23,50 @@ $url_dashboard = match($role) {
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= base_url('assets/css/styling.css') ?>">
   <style>
-    /* ── Latar Belakang Organic Soft Glow ── */
+    /* ── Latar Belakang Healthy Diet Green Theme ── */
     body.landing-page {
       margin: 0;
       font-family: var(--font-utama);
       color: var(--teks);
       background-color: #FAF8F5;
-      background-image: 
-        radial-gradient(circle at 10% 12%, rgba(220, 240, 228, 0.75) 0%, transparent 42%),
-        radial-gradient(circle at 90% 18%, rgba(228, 242, 234, 0.65) 0%, transparent 40%),
-        radial-gradient(circle at 50% 55%, rgba(244, 238, 228, 0.80) 0%, transparent 50%),
-        radial-gradient(circle at 20% 92%, rgba(226, 240, 232, 0.70) 0%, transparent 45%);
-      background-attachment: fixed;
+      background-image: url('<?= base_url('assets/img/bg-diet-green.jpg') ?>');
+      background-repeat: no-repeat;
+      background-position: center top;
       background-size: cover;
+      background-attachment: fixed;
       min-height: 100vh;
     }
 
-    /* ── Navbar Glassmorphism ── */
+    /* ── Navbar Deep Forest Green ── */
     .landing-navbar {
       position: sticky;
       top: 0;
       z-index: 100;
-      background: rgba(250, 248, 245, 0.82);
+      background: rgba(30, 64, 50, 0.96);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      border-bottom: 1px solid rgba(232, 227, 218, 0.75);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 4px 20px rgba(16, 38, 28, 0.2);
       transition: all 0.2s ease;
     }
 
     /* ── Hero Container ── */
     .landing-hero {
-      padding: clamp(64px, 9vw, 100px) 0 clamp(48px, 6vw, 76px);
+      padding: clamp(64px, 8vw, 96px) 0 clamp(48px, 6vw, 72px);
       position: relative;
+    }
+
+    .hero-layout {
+      display: grid;
+      grid-template-columns: 1.18fr 0.82fr;
+      align-items: center;
+      gap: clamp(32px, 5vw, 64px);
+      margin-bottom: clamp(36px, 5vw, 56px);
+    }
+
+    .hero-konten {
+      position: relative;
+      z-index: 2;
     }
 
     .hero-badge-pill {
@@ -81,12 +93,11 @@ $url_dashboard = match($role) {
     }
 
     .landing-hero h1 {
-      font-size: clamp(2.4rem, 5vw, 3.8rem);
+      font-size: clamp(2.3rem, 4.2vw, 3.5rem);
       font-weight: 800;
       line-height: 1.15;
       color: var(--gelap);
       letter-spacing: -0.03em;
-      max-width: 800px;
       margin: 0 0 20px;
     }
     .landing-hero h1 .teks-aksen {
@@ -96,12 +107,87 @@ $url_dashboard = match($role) {
     }
 
     .landing-hero p.hero-deskripsi {
-      font-size: clamp(1.05rem, 1.8vw, 1.2rem);
+      font-size: clamp(1.02rem, 1.5vw, 1.15rem);
       color: var(--teks);
       opacity: 0.88;
       line-height: 1.68;
-      max-width: 640px;
+      max-width: 620px;
       margin: 0 0 32px;
+    }
+
+    /* ── Hero Visual Border Lingkaran ── */
+    .hero-visual {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    .hero-circle-frame {
+      position: relative;
+      width: clamp(280px, 32vw, 450px);
+      height: clamp(280px, 32vw, 450px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Lingkaran border dekoratif luar (soft mint organic glow) */
+    .hero-circle-aura {
+      position: absolute;
+      inset: -16px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(206, 235, 219, 0.75) 0%, rgba(220, 242, 230, 0.35) 65%, transparent 100%);
+      border: 14px solid rgba(212, 238, 224, 0.7);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Gambar utama dengan border lingkaran & bayangan halus */
+    .hero-circle-image {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: 85% center;
+      border: 6px solid #ffffff;
+      box-shadow: 
+        0 24px 50px rgba(34, 56, 45, 0.16),
+        0 0 0 12px rgba(212, 238, 224, 0.65);
+      display: block;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .hero-circle-image:hover {
+      transform: scale(1.02);
+    }
+
+    @media (max-width: 960px) {
+      .hero-layout {
+        grid-template-columns: 1fr;
+        gap: 36px;
+        text-align: center;
+      }
+      .hero-badge-pill {
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .landing-hero p.hero-deskripsi {
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .hero-btn-group {
+        justify-content: center;
+      }
+      .hero-trust-bar {
+        justify-content: center;
+      }
+      .hero-circle-frame {
+        width: clamp(260px, 55vw, 360px);
+        height: clamp(260px, 55vw, 360px);
+      }
     }
 
     /* Tombol Hero */
@@ -216,7 +302,7 @@ $url_dashboard = match($role) {
     }
 
     .kartu-fitur-modern {
-      background: rgba(255, 255, 255, 0.88);
+      background: #ffffff;
       border: 1px solid rgba(232, 227, 218, 0.95);
       border-radius: 24px;
       padding: 32px 26px;
@@ -225,8 +311,7 @@ $url_dashboard = match($role) {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      backdrop-filter: blur(8px);
-      box-shadow: 0 8px 24px rgba(34, 56, 45, 0.03);
+      box-shadow: 0 8px 24px rgba(34, 56, 45, 0.04);
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
     }
@@ -284,11 +369,15 @@ $url_dashboard = match($role) {
 
     /* ── Section Cara Kerja ── */
     .section-alur {
-      padding: 72px 0 88px;
-      background: rgba(255, 255, 255, 0.70);
+      padding: clamp(72px, 8vw, 100px) 0 clamp(80px, 9vw, 110px);
+      background-color: #FAF8F5;
+      background-image: url('<?= base_url('assets/img/bg-diet-food.jpg') ?>');
+      background-repeat: no-repeat;
+      background-position: center center;
+      background-size: cover;
       border-top: 1px solid rgba(232, 227, 218, 0.85);
       border-bottom: 1px solid rgba(232, 227, 218, 0.85);
-      backdrop-filter: blur(10px);
+      position: relative;
     }
     .alur-grid-modern {
       display: grid;
@@ -296,11 +385,17 @@ $url_dashboard = match($role) {
       gap: 24px;
     }
     .kartu-alur {
-      background: #FAF8F5;
+      background: #ffffff;
       border: 1px solid rgba(232, 227, 218, 0.95);
       border-radius: 22px;
-      padding: 32px 26px;
+      padding: 34px 28px;
       position: relative;
+      box-shadow: 0 10px 28px rgba(34, 56, 45, 0.06), 0 2px 8px rgba(34, 56, 45, 0.02);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .kartu-alur:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 18px 38px rgba(34, 56, 45, 0.10);
     }
     .alur-nomor-badge {
       display: inline-flex;
@@ -336,6 +431,7 @@ $url_dashboard = match($role) {
       text-align: center;
       font-size: 0.85rem;
       color: var(--teks-redup);
+      background: #ffffff;
       border-top: 1px solid rgba(232, 227, 218, 0.75);
     }
 
@@ -353,13 +449,13 @@ $url_dashboard = match($role) {
   <div class="container nav-isi">
     <div class="nav-brand">
       <a class="logo" href="<?= base_url('index.php') ?>">
-        <span class="logo-ikon" aria-hidden="true" style="font-size:0.85rem; font-weight:800; background:var(--mint); color:var(--hijau); width:32px; height:32px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 8px rgba(58,105,83,0.15);">CL</span>
-        <span class="logo-teks">Calorie <em>Lab</em></span>
+        <span class="logo-ikon" aria-hidden="true" style="font-size:0.85rem; font-weight:800; background:rgba(255,255,255,0.18); color:#fff; border:1px solid rgba(255,255,255,0.25); width:32px; height:32px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 8px rgba(0,0,0,0.15);">CL</span>
+        <span class="logo-teks" style="color:#fff;">Calorie <em style="color:#9AE6B4;">Lab</em></span>
       </a>
     </div>
     <div class="nav-menu">
       <?php if ($sudah_login): ?>
-        <a class="nav-link-subtle" style="font-weight:700; color:var(--hijau);" href="<?= htmlspecialchars($url_dashboard) ?>">
+        <a class="nav-link-subtle" style="font-weight:700; color:#fff;" href="<?= htmlspecialchars($url_dashboard) ?>">
           <?= $role === 'admin' ? 'Panel Admin' : ($role === 'pakar' ? 'Portal Pakar' : 'Buka Dashboard') ?>
         </a>
         <a class="tombol kecil tombol-keluar" href="<?= base_url('logout.php') ?>" style="display:inline-flex; align-items:center; gap:6px;">
@@ -367,7 +463,7 @@ $url_dashboard = match($role) {
           Keluar
         </a>
       <?php else: ?>
-        <a class="tombol kecil" href="<?= base_url('register.php') ?>" style="font-weight:700;">Daftar Akun</a>
+        <a class="tombol kecil" href="<?= base_url('register.php') ?>" style="font-weight:700; background:#fff; color:#1E4032; border:none; box-shadow:0 4px 14px rgba(0,0,0,0.15);">Daftar Akun</a>
       <?php endif; ?>
     </div>
   </div>
@@ -377,50 +473,63 @@ $url_dashboard = match($role) {
 <header class="landing-hero">
   <div class="container">
     
-    <!-- Badge Status -->
-    <div class="hero-badge-pill">
-      <span class="hero-badge-dot"></span>
-      Platform Nutrisi &amp; Gaya Hidup Sehat
-    </div>
+    <div class="hero-layout">
+      <!-- Kolom Kiri: Teks & Aksi -->
+      <div class="hero-konten">
+        <!-- Badge Status -->
+        <div class="hero-badge-pill">
+          <span class="hero-badge-dot"></span>
+          Platform Nutrisi &amp; Gaya Hidup Sehat
+        </div>
 
-    <!-- Headline Utama -->
-    <h1>
-      Nutrisi Terukur,<br>
-      <span class="teks-aksen">Sesuai Kebutuhan Tubuhmu.</span>
-    </h1>
+        <!-- Headline Utama -->
+        <h1>
+          Nutrisi Terukur,<br>
+          <span class="teks-aksen">Sesuai Kebutuhan Tubuhmu.</span>
+        </h1>
 
-    <!-- Paragraf Penjelas -->
-    <p class="hero-deskripsi">
-      Hitung indeks massa tubuh (BMI), rancang program diet seimbang, dan pantau kuota kalori harianmu secara presisi. Bebas dari metode diet ekstrem — hanya konsistensi terukur berbasis sains dan bimbingan ahli.
-    </p>
+        <!-- Paragraf Penjelas -->
+        <p class="hero-deskripsi">
+          Hitung indeks massa tubuh (BMI), rancang program diet seimbang, dan pantau kuota kalori harianmu secara presisi. Bebas dari metode diet ekstrem — hanya konsistensi terukur berbasis sains dan bimbingan ahli.
+        </p>
 
-    <!-- Tombol Aksi Hero -->
-    <div class="hero-btn-group">
-      <?php if ($sudah_login): ?>
-        <?php if ($role === 'pakar'): ?>
-          <a class="btn-hero-utama" href="<?= base_url('pakar/index.php') ?>">
-            Buka Portal Pakar &rarr;
-          </a>
-        <?php elseif ($role === 'admin'): ?>
-          <a class="btn-hero-utama" href="<?= base_url('admin/index.php') ?>">
-            Buka Panel Admin &rarr;
-          </a>
-        <?php else: ?>
-          <a class="btn-hero-utama" href="<?= base_url('dashboard.php') ?>">
-            Buka Dashboard Saya &rarr;
-          </a>
-          <a class="btn-hero-sekunder" href="<?= base_url('menu.php') ?>">
-            Lihat Menu Rekomendasi
-          </a>
-        <?php endif; ?>
-      <?php else: ?>
-        <a class="btn-hero-utama" href="<?= base_url('register.php') ?>">
-          Mulai Hitung BMI Gratis &rarr;
-        </a>
-        <a class="btn-hero-sekunder" href="<?= base_url('login.php') ?>">
-          Sudah punya akun? Masuk
-        </a>
-      <?php endif; ?>
+        <!-- Tombol Aksi Hero -->
+        <div class="hero-btn-group">
+          <?php if ($sudah_login): ?>
+            <?php if ($role === 'pakar'): ?>
+              <a class="btn-hero-utama" href="<?= base_url('pakar/index.php') ?>">
+                Buka Portal Pakar &rarr;
+              </a>
+            <?php elseif ($role === 'admin'): ?>
+              <a class="btn-hero-utama" href="<?= base_url('admin/index.php') ?>">
+                Buka Panel Admin &rarr;
+              </a>
+            <?php else: ?>
+              <a class="btn-hero-utama" href="<?= base_url('dashboard.php') ?>">
+                Buka Dashboard Saya &rarr;
+              </a>
+              <a class="btn-hero-sekunder" href="<?= base_url('menu.php') ?>">
+                Lihat Menu Rekomendasi
+              </a>
+            <?php endif; ?>
+          <?php else: ?>
+            <a class="btn-hero-utama" href="<?= base_url('register.php') ?>">
+              Mulai Hitung BMI Gratis &rarr;
+            </a>
+            <a class="btn-hero-sekunder" href="<?= base_url('login.php') ?>">
+              Sudah punya akun? Masuk
+            </a>
+          <?php endif; ?>
+        </div>
+      </div>
+
+      <!-- Kolom Kanan: Visual Border Lingkaran Gambar -->
+      <div class="hero-visual">
+        <div class="hero-circle-frame">
+          <div class="hero-circle-aura"></div>
+          <img src="<?= base_url('assets/img/hero-healthy.jpg') ?>" alt="Gaya Hidup Sehat & Nutrisi Terukur" class="hero-circle-image">
+        </div>
+      </div>
     </div>
 
     <!-- Trust Points Bar -->

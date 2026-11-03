@@ -4,6 +4,7 @@ $sudah_login = isset($_SESSION['user_id']);
 $halaman_aktif = basename($_SERVER['PHP_SELF'] ?? '');
 $is_admin_area = (strpos($_SERVER['PHP_SELF'] ?? '', '/admin/') !== false || strpos($halaman_aktif, 'admin_') === 0);
 $is_pakar_area = (strpos($_SERVER['PHP_SELF'] ?? '', '/pakar/') !== false || strpos($halaman_aktif, 'pakar_') === 0);
+$is_user_area  = (!$is_admin_area && !$is_pakar_area && $sudah_login);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -16,7 +17,7 @@ $is_pakar_area = (strpos($_SERVER['PHP_SELF'] ?? '', '/pakar/') !== false || str
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= base_url('assets/css/styling.css') ?>">
 </head>
-<body>
+<body class="<?= $is_user_area ? 'halaman-dashboard halaman-pengguna' : '' ?>">
 
 <?php if ($sudah_login): ?>
   <input class="sidebar-toggle" type="checkbox" id="sidebar-toggle" aria-label="Buka atau tutup navigasi" aria-controls="sidebar-navigasi">
@@ -29,7 +30,7 @@ $is_pakar_area = (strpos($_SERVER['PHP_SELF'] ?? '', '/pakar/') !== false || str
         <label class="sidebar-toggle-label sidebar-toggle-nav" for="sidebar-toggle" aria-label="Buka navigasi"><span aria-hidden="true">☰</span></label>
       <?php endif; ?>
       <a class="logo" href="<?= base_url('index.php') ?>">
-        <span class="logo-ikon" aria-hidden="true" style="font-size:0.82rem; font-weight:800; background:var(--mint); color:var(--hijau); width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;">CL</span>
+        <span class="logo-ikon" aria-hidden="true">CL</span>
         <span class="logo-teks">Calorie <em>Lab</em></span>
       </a>
     </div>

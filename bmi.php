@@ -29,27 +29,7 @@ $st_last = $pdo->prepare('SELECT rb.*, kb.nama AS kat_nama, kb.kode AS kat_kode,
 $st_last->execute([$uid]);
 $riwayat_terakhir = $st_last->fetch();
 
-// Hitung posisi jarum skala BMI visual (rentang klinis 14 - 34)
-$posisi_persen = 0;
-if ($riwayat_terakhir) {
-    $bmi_val = (float)$riwayat_terakhir['bmi'];
-    if ($bmi_val <= 14) {
-        $posisi_persen = 3;
-    } elseif ($bmi_val >= 34) {
-        $posisi_persen = 97;
-    } elseif ($bmi_val < 18.5) {
-        $posisi_persen = 3 + (($bmi_val - 14) / (18.5 - 14)) * 19.5;
-    } elseif ($bmi_val <= 25.0) {
-        $posisi_persen = 22.5 + (($bmi_val - 18.5) / (25.0 - 18.5)) * 32.5;
-    } elseif ($bmi_val <= 27.0) {
-        $posisi_persen = 55 + (($bmi_val - 25.0) / (27.0 - 25.0)) * 10;
-    } else {
-        $posisi_persen = 65 + (($bmi_val - 27.0) / (34 - 27.0)) * 32;
-    }
-    $posisi_persen = round(max(3, min(97, $posisi_persen)), 1);
-}
-
-// â”€â”€ Apakah form diblokir? â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Apakah form diblokir?
 // Blokir jika: sudah pernah input BMI DAN masih punya rencana diet aktif
 // (artinya target belum selesai/diselesaikan)
 $form_diblokir = $riwayat_terakhir && $rencana_aktif;
@@ -137,23 +117,46 @@ $judul = 'Hitung BMI';
 include BASE_DIR . 'includes/header.php';
 ?>
 
-<h2>Hitung BMI</h2>
-<p class="teks-redup">Isi data tubuhmu untuk mengetahui kategori BMI dan target kalori harian.</p>
+<div class="page-hero-header">
+  <div class="page-hero-icon">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4"/><path d="M12 16V8"/></svg>
+  </div>
+  <div class="page-hero-teks">
+    <h2>Hitung BMI</h2>
+    <p>Isi data tubuhmu untuk mengetahui kategori BMI dan target kalori harian.</p>
+  </div>
+</div>
 
 <?php if ($pesan): ?>
   <div class="alert <?= $pesan_tipe === 'error' ? 'error' : 'sukses' ?>"><?= h($pesan) ?></div>
 <?php endif; ?>
 
-<div class="dua-kolom">
-  <div class="kotak-form" style="margin:0; max-width:none;">
+<div class="dua-kolom bmi-grid-harmonized">
+  <!-- Kolom Kiri: Form Input atau Status Terkunci -->
+  <div class="kotak-form bmi-card-equal" style="margin:0; max-width:none;">
 
     <?php if ($form_diblokir): ?>
-      <!-- Form diblokir: user masih punya rencana aktif -->
-      <div class="alert error" style="margin-bottom:16px">
-        <strong>Pembaruan BMI tidak tersedia.</strong><br>
-        Kamu masih memiliki rencana diet aktif<?php if ($rencana_aktif['berat_target']): ?> (target berat: <b><?= h(number_format((float)$rencana_aktif['berat_target'], 1, ',', '.')) ?>&nbsp;kg</b>)<?php endif; ?>. Selesaikan atau tandai rencana tersebut sebagai selesai terlebih dahulu sebelum memperbarui data BMI.
+      <!-- Form diblokir: user masih punya rencana diet aktif -->
+      <div style="display:flex; flex-direction:column; justify-content:space-between; height:100%;">
+        <div>
+          <div style="display:inline-flex; align-items:center; gap:6px; background:var(--mint); color:var(--hijau); font-weight:700; font-size:0.75rem; padding:4px 10px; border-radius:var(--radius-pil); margin-bottom:14px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Program Diet Berlangsung
+          </div>
+          <h3 style="font-size:1.2rem; margin-bottom:8px; color:var(--gelap);">Pembaruan BMI Terkunci</h3>
+          <p class="teks-redup" style="font-size:0.88rem; line-height:1.55; margin-bottom:16px;">
+            Kamu sedang menjalankan program diet aktif<?php if (!empty($rencana_aktif['berat_target'])): ?> dengan target <strong><?= h(number_format((float)$rencana_aktif['berat_target'], 1, ',', '.')) ?> kg</strong><?php endif; ?>.
+            Untuk menjaga konsistensi kalkulasi target asupan harian, data BMI tidak dapat diubah selama rencana masih aktif.
+          </p>
+          <div style="background:var(--latar); border:1px solid var(--garis); border-radius:var(--radius-kartu); padding:14px; font-size:0.83rem; color:var(--teks-redup); line-height:1.5;">
+            <span style="font-weight:700; color:var(--gelap); display:block; margin-bottom:2px;">Catatan:</span>
+            Jika target telah tercapai atau ingin mengubah target baru, tandai program diet sebagai selesai pada menu Rencana Diet.
+          </div>
+        </div>
+        <div style="margin-top:20px;">
+          <a class="tombol penuh" href="rencana.php" style="text-align:center; display:block;">Kelola Rencana Diet &rarr;</a>
+        </div>
       </div>
-      <a class="tombol penuh" href="rencana.php">Lihat rencana diet aktif</a>
 
     <?php else: ?>
       <!-- Form aktif: belum ada BMI atau rencana sudah selesai -->
@@ -213,103 +216,120 @@ include BASE_DIR . 'includes/header.php';
 
   </div>
 
+  <!-- Kolom Kanan: Hasil Perhitungan BMI & Target Kalori -->
   <div>
     <?php if ($riwayat_terakhir): ?>
-      <div class="hasil">
-        <small>BMI terakhir tersimpan</small>
-        <div style="display:flex; align-items:baseline; gap:12px; margin-top:4px;">
-          <div class="angka-besar" style="margin:0;"><?= h(number_format((float)$riwayat_terakhir['bmi'], 1, ',', '.')) ?></div>
-          <span class="badge kategori-<?= h($riwayat_terakhir['kat_kode']) ?>" style="font-size:0.9rem; padding:4px 12px;"><?= h($riwayat_terakhir['kat_nama']) ?></span>
+      <div class="hasil bmi-card-equal" style="margin:0;">
+        <div>
+          <small>BMI terakhir tersimpan</small>
+          <div style="display:flex; align-items:baseline; gap:12px; margin-top:4px;">
+            <div class="angka-besar" style="margin:0;"><?= h(number_format((float)$riwayat_terakhir['bmi'], 1, ',', '.')) ?></div>
+            <span class="badge kategori-<?= h($riwayat_terakhir['kat_kode']) ?>" style="font-size:0.9rem; padding:4px 12px;"><?= h($riwayat_terakhir['kat_nama']) ?></span>
+          </div>
+
+          <p style="margin-top:12px; line-height:1.6; font-size:0.9rem; color:var(--gelap);"><?= h($riwayat_terakhir['kat_saran']) ?></p>
+          
+          <hr style="margin:16px 0;">
+          
+          <small>Target kalori harian</small>
+          <div class="angka-besar" style="margin:4px 0 6px;"><?= h(number_format((int)$riwayat_terakhir['target_kalori'], 0, ',', '.')) ?> <small>kkal</small></div>
+          <?php if ($rencana_aktif): ?>
+            <p class="catatan" style="margin:6px 0 14px">
+              Target aktif di Dashboard &amp; Catatan: <strong><?= number_format((int)$rencana_aktif['target_kalori'], 0, ',', '.') ?> kkal</strong> (Program Diet).
+            </p>
+          <?php endif; ?>
         </div>
 
-        <!-- Indikator Skala Warna Visual BMI Meter -->
-        <div class="bmi-gauge-wrapper">
-          <div class="bmi-gauge-bar" title="Indeks Massa Tubuh: <?= h($riwayat_terakhir['bmi']) ?>">
-            <div class="bmi-gauge-segment kurus" title="Kurus (< 18.5)"></div>
-            <div class="bmi-gauge-segment normal" title="Normal (18.5 - 25.0)"></div>
-            <div class="bmi-gauge-segment gemuk" title="Gemuk (25.1 - 27.0)"></div>
-            <div class="bmi-gauge-segment obesitas" title="Obesitas (> 27.0)"></div>
-            <div class="bmi-gauge-pin" style="left: <?= $posisi_persen ?>%;">
-              <div class="bmi-gauge-pin-dot"></div>
-            </div>
-          </div>
-          <div class="bmi-gauge-labels">
-            <span>Kurus &lt;18,5</span>
-            <span style="color:#059669;">Normal 18,5-25</span>
-            <span style="color:#D97706;">Gemuk 25-27</span>
-            <span style="color:#DC2626;">Obesitas &gt;27</span>
-          </div>
+        <div style="margin-top:16px;">
+          <a class="tombol penuh" href="menu.php" style="text-align:center; display:block;">Lihat menu yang cocok &rarr;</a>
         </div>
-
-        <p style="margin-top:14px; line-height:1.6;"><?= h($riwayat_terakhir['kat_saran']) ?></p>
-        <hr>
-        <small>Target kalori harian</small>
-        <div class="angka-besar"><?= h(number_format((int)$riwayat_terakhir['target_kalori'], 0, ',', '.')) ?> <small>kkal</small></div>
-        <?php if ($rencana_aktif): ?>
-          <p class="catatan" style="margin:10px 0 14px">
-            Kamu memiliki rencana diet aktif dengan target <b><?= number_format((int)$rencana_aktif['target_kalori'], 0, ',', '.') ?> kkal</b>.
-            Target pada rencana aktif tersebut tetap menjadi acuan utama pada Dashboard dan Catatan.
-          </p>
-        <?php endif; ?>
-        <a class="tombol" href="menu.php" style="margin-top:6px;">Lihat menu yang cocok &rarr;</a>
       </div>
     <?php else: ?>
-      <div class="kosong">Hasilnya akan muncul di sini setelah kamu menekan <b>Simpan &amp; Hitung BMI</b>.</div>
+      <div class="kosong bmi-card-equal" style="margin:0; justify-content:center; text-align:center; padding:32px 20px;">
+        <p>Hasilnya akan muncul di sini setelah kamu mengisi formulir dan menekan tombol <strong>Simpan &amp; Hitung BMI</strong>.</p>
+      </div>
     <?php endif; ?>
+  </div>
+</div>
 
-    <div class="kartu" style="margin-top: 20px; padding: 20px;">
-      <h3 style="font-size: 1.05rem; margin-bottom: 8px;">
+<!-- Bagian Bawah: Klasifikasi Standar BMI (Kemenkes RI) Full-Width 4 Kolom -->
+<div class="kartu bmi-klasifikasi-card">
+  <div class="bmi-klasifikasi-item-header">
+    <div>
+      <h3 style="font-size: 1.05rem; margin-bottom: 4px; display:flex; align-items:center; gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--hijau)"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
         Klasifikasi Standar BMI (Kemenkes RI)
       </h3>
-      <p class="teks-redup" style="font-size: 0.85rem; margin-bottom: 14px;">
-        Berikut adalah rentang acuan indeks massa tubuh yang digunakan dalam sistem:
+      <p class="teks-redup" style="font-size: 0.85rem; margin: 0;">
+        Rentang acuan indeks massa tubuh klinis yang digunakan sebagai acuan gizi:
       </p>
-      <div style="display: flex; flex-direction: column; gap: 8px;">
-        <div class="baris-standar-bmi <?= ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'kurus') ? 'aktif-kategori' : '' ?>" style="display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: var(--latar); border-radius: var(--radius-kecil); font-size: 0.88rem;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span class="badge kategori-kurus" style="font-size: 0.78rem;">Kurus / Underweight</span>
-            <?php if ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'kurus'): ?>
-              <span class="tag-posisi-anda">&check; Kategori Tubuhmu</span>
-            <?php endif; ?>
-          </div>
-          <strong>&lt; 18,5</strong>
-        </div>
+    </div>
+  </div>
 
-        <div class="baris-standar-bmi <?= ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'normal') ? 'aktif-kategori' : '' ?>" style="display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: var(--latar); border-radius: var(--radius-kecil); font-size: 0.88rem;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span class="badge kategori-normal" style="font-size: 0.78rem;">Normal (Ideal)</span>
-            <?php if ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'normal'): ?>
-              <span class="tag-posisi-anda">&check; Kategori Tubuhmu</span>
-            <?php endif; ?>
-          </div>
-          <strong>18,5 &ndash; 25,0</strong>
-        </div>
-
-        <div class="baris-standar-bmi <?= ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'gemuk') ? 'aktif-kategori' : '' ?>" style="display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: var(--latar); border-radius: var(--radius-kecil); font-size: 0.88rem;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span class="badge kategori-gemuk" style="font-size: 0.78rem;">Gemuk / Overweight</span>
-            <?php if ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'gemuk'): ?>
-              <span class="tag-posisi-anda">&check; Kategori Tubuhmu</span>
-            <?php endif; ?>
-          </div>
-          <strong>25,1 &ndash; 27,0</strong>
-        </div>
-
-        <div class="baris-standar-bmi <?= ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'obesitas') ? 'aktif-kategori' : '' ?>" style="display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: var(--latar); border-radius: var(--radius-kecil); font-size: 0.88rem;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span class="badge kategori-obesitas" style="font-size: 0.78rem;">Obesitas</span>
-            <?php if ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'obesitas'): ?>
-              <span class="tag-posisi-anda">&check; Kategori Tubuhmu</span>
-            <?php endif; ?>
-          </div>
-          <strong>&gt; 27,0</strong>
-        </div>
+  <div class="bmi-klasifikasi-grid">
+    <!-- 1. Kurus -->
+    <?php $is_kurus = ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'kurus'); ?>
+    <div class="bmi-klasifikasi-item <?= $is_kurus ? 'aktif' : '' ?>">
+      <div class="bmi-klasifikasi-item-header">
+        <span class="badge kategori-kurus" style="font-size:0.76rem;">Kurus</span>
+        <?php if ($is_kurus): ?>
+          <span class="bmi-klasifikasi-tag-aktif">&check; Kategori Tubuhmu</span>
+        <?php endif; ?>
+      </div>
+      <div>
+        <div class="bmi-klasifikasi-item-range">&lt; 18,5</div>
+        <div class="teks-redup" style="font-size:0.8rem; margin-top:2px;">Underweight</div>
       </div>
     </div>
 
-    <p class="catatan">BMI hanya indikator kasar dan kurang cocok untuk atlet, ibu hamil, dan usia di bawah 18 tahun. Target kalori bersifat perkiraan.</p>
+    <!-- 2. Normal -->
+    <?php $is_normal = ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'normal'); ?>
+    <div class="bmi-klasifikasi-item <?= $is_normal ? 'aktif' : '' ?>">
+      <div class="bmi-klasifikasi-item-header">
+        <span class="badge kategori-normal" style="font-size:0.76rem;">Normal</span>
+        <?php if ($is_normal): ?>
+          <span class="bmi-klasifikasi-tag-aktif">&check; Kategori Tubuhmu</span>
+        <?php endif; ?>
+      </div>
+      <div>
+        <div class="bmi-klasifikasi-item-range">18,5 &ndash; 25,0</div>
+        <div class="teks-redup" style="font-size:0.8rem; margin-top:2px;">Ideal / Sehat</div>
+      </div>
+    </div>
+
+    <!-- 3. Gemuk -->
+    <?php $is_gemuk = ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'gemuk'); ?>
+    <div class="bmi-klasifikasi-item <?= $is_gemuk ? 'aktif' : '' ?>">
+      <div class="bmi-klasifikasi-item-header">
+        <span class="badge kategori-gemuk" style="font-size:0.76rem;">Gemuk</span>
+        <?php if ($is_gemuk): ?>
+          <span class="bmi-klasifikasi-tag-aktif">&check; Kategori Tubuhmu</span>
+        <?php endif; ?>
+      </div>
+      <div>
+        <div class="bmi-klasifikasi-item-range">25,1 &ndash; 27,0</div>
+        <div class="teks-redup" style="font-size:0.8rem; margin-top:2px;">Overweight</div>
+      </div>
+    </div>
+
+    <!-- 4. Obesitas -->
+    <?php $is_obesitas = ($riwayat_terakhir && $riwayat_terakhir['kat_kode'] === 'obesitas'); ?>
+    <div class="bmi-klasifikasi-item <?= $is_obesitas ? 'aktif' : '' ?>">
+      <div class="bmi-klasifikasi-item-header">
+        <span class="badge kategori-obesitas" style="font-size:0.76rem;">Obesitas</span>
+        <?php if ($is_obesitas): ?>
+          <span class="bmi-klasifikasi-tag-aktif">&check; Kategori Tubuhmu</span>
+        <?php endif; ?>
+      </div>
+      <div>
+        <div class="bmi-klasifikasi-item-range">&gt; 27,0</div>
+        <div class="teks-redup" style="font-size:0.8rem; margin-top:2px;">Perlu Pengawasan</div>
+      </div>
+    </div>
   </div>
 </div>
+
+<p class="catatan" style="margin-top:14px;">BMI hanya indikator kasar dan kurang cocok untuk atlet, ibu hamil, dan usia di bawah 18 tahun. Target kalori bersifat perkiraan edukatif.</p>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {

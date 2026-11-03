@@ -126,7 +126,7 @@ if ($aktif) {
     $q->execute([$uid, $aktif['id']]);
     $catatan = $q->fetchAll();
 }
-$q = $pdo->prepare("SELECT * FROM rencana_diet WHERE user_id = ? AND status <> 'aktif' ORDER BY id DESC LIMIT 5");
+$q = $pdo->prepare("SELECT * FROM rencana_diet WHERE user_id = ? AND status <> 'aktif' ORDER BY id DESC LIMIT 20");
 $q->execute([$uid]);
 $rencana_lama = $q->fetchAll();
 
@@ -176,16 +176,17 @@ $judul = 'Profil dan Perkembangan';
 include BASE_DIR . 'includes/header.php';
 ?>
 
-<div class="profil-page-header">
-  <div class="profil-user-card">
-    <div class="profil-avatar">
+<div class="page-hero-header">
+  <div class="page-hero-icon">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+  </div>
+  <div class="page-hero-teks">
+    <h2>Profil &amp; Progres</h2>
+    <p><?= h($user['nama']) ?> &middot; <?= h($user['email']) ?><?php if ($aktif): ?> &middot; <?= nf($aktif['tinggi_cm']) ?> cm &middot; <?= (int)$aktif['usia'] ?> tahun<?php endif; ?></p>
+  </div>
+  <div style="margin-left:auto; flex-shrink:0;">
+    <div style="width:48px;height:48px;border-radius:50%;background:var(--hijau);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.35rem;font-weight:800;letter-spacing:-0.03em;">
       <?= mb_strtoupper(mb_substr($user['nama'], 0, 1)) ?>
-    </div>
-    <div class="profil-user-info">
-      <h2><?= h($user['nama']) ?></h2>
-      <p class="teks-redup"><?= h($user['email']) ?>
-        <?php if ($aktif): ?> &middot; Tinggi <?= nf($aktif['tinggi_cm']) ?> cm &middot; Usia <?= (int)$aktif['usia'] ?> th<?php endif; ?>
-      </p>
     </div>
   </div>
 </div>
@@ -195,47 +196,69 @@ include BASE_DIR . 'includes/header.php';
 
 <?php if (!$aktif): ?>
   <div class="kosong-state">
-    <div class="kosong-state-ikon">📊</div>
+    <div class="kosong-state-ikon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+    </div>
     <h3>Belum ada rencana aktif</h3>
     <p>Kamu belum punya rencana diet yang aktif, jadi belum ada perkembangan yang bisa dipantau.</p>
     <a class="tombol" href="rencana.php">Buat rencana diet &rarr;</a>
   </div>
 
 <?php else: ?>
-  <!-- Status rencana -->
-  <div class="profil-status-bar">
-    <div class="profil-status-label">
-      <span class="profil-status-tujuan"><?= h($label[$aktif['tujuan']]) ?></span>
-      <span class="teks-redup" style="font-size:0.85rem;">Hari ke-<?= $hari_ke ?> dari <?= $durasi ?> hari</span>
+  <!-- Status rencana terintegrasi dengan Progress Bar (Solid White Card) -->
+  <div class="kartu profil-status-bar" style="flex-direction:column; align-items:stretch; gap:14px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div class="profil-status-label">
+        <span class="profil-status-tujuan"><?= h($label[$aktif['tujuan']]) ?></span>
+        <span class="teks-redup" style="font-size:0.85rem;">Hari ke-<?= $hari_ke ?> dari <?= $durasi ?> hari</span>
+      </div>
+      <span class="badge profil-status-badge" style="background:<?= h($status[1]) ?>"><?= h($status[0]) ?></span>
     </div>
-    <span class="badge profil-status-badge" style="background:<?= h($status[1]) ?>"><?= h($status[0]) ?></span>
+
+    <?php if ($aktif['tujuan'] !== 'pertahankan'): ?>
+      <div style="border-top:1px solid var(--garis); padding-top:12px;">
+        <div class="profil-progress-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="font-size:0.82rem; font-weight:600; color:var(--teks-redup);">Progres menuju berat target</span>
+          <strong style="color:var(--hijau); font-size:0.88rem;"><?= $capai ?>%</strong>
+        </div>
+        <div class="progres" style="height:8px; margin:0;"><div class="progres-isi" style="width:<?= $capai ?>%"></div></div>
+      </div>
+    <?php endif; ?>
   </div>
 
   <!-- Stat cards berat -->
   <div class="profil-stat-grid">
     <div class="profil-stat-card">
-      <div class="profil-stat-ikon">⚖️</div>
+      <div class="profil-stat-ikon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+      </div>
       <div class="profil-stat-isi">
         <span class="profil-stat-label">Berat Awal</span>
         <span class="profil-stat-nilai"><?= nf($aktif['berat_awal'], 1) ?> <small>kg</small></span>
       </div>
     </div>
     <div class="profil-stat-card profil-stat-current">
-      <div class="profil-stat-ikon">📍</div>
+      <div class="profil-stat-ikon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
       <div class="profil-stat-isi">
         <span class="profil-stat-label">Berat Sekarang</span>
         <span class="profil-stat-nilai"><?= nf($berat_skrg, 1) ?> <small>kg</small></span>
       </div>
     </div>
     <div class="profil-stat-card">
-      <div class="profil-stat-ikon">🎯</div>
+      <div class="profil-stat-ikon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      </div>
       <div class="profil-stat-isi">
         <span class="profil-stat-label">Berat Target</span>
         <span class="profil-stat-nilai"><?= nf($aktif['berat_target'], 1) ?> <small>kg</small></span>
       </div>
     </div>
     <div class="profil-stat-card">
-      <div class="profil-stat-ikon">🔥</div>
+      <div class="profil-stat-ikon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
       <div class="profil-stat-isi">
         <span class="profil-stat-label">Target Kalori</span>
         <span class="profil-stat-nilai"><?= nf($aktif['target_kalori']) ?> <small>kkal</small></span>
@@ -243,22 +266,12 @@ include BASE_DIR . 'includes/header.php';
     </div>
   </div>
 
-  <?php if ($aktif['tujuan'] !== 'pertahankan'): ?>
-    <div class="profil-progress-section">
-      <div class="profil-progress-label">
-        <span>Progres menuju target</span>
-        <strong><?= $capai ?>%</strong>
-      </div>
-      <div class="progres" style="margin-top:6px"><div class="progres-isi" style="width:<?= $capai ?>%"></div></div>
-    </div>
-  <?php endif; ?>
-
   <div class="profil-two-col">
 
     <!-- Kolom kiri: Grafik + Form catat -->
     <div class="profil-col-main">
       <div class="kartu profil-grafik-card">
-        <h3 style="margin-bottom:14px;">📈 Grafik Berat Badan</h3>
+        <h3 style="margin-bottom:14px;">Grafik Berat Badan</h3>
         <canvas id="grafik" height="130"></canvas>
         <p class="catatan" style="margin-top:10px;">Garis putus-putus adalah jalur ideal dari berat awal ke target.</p>
       </div>
@@ -291,22 +304,32 @@ include BASE_DIR . 'includes/header.php';
       </div>
     </div>
 
-    <!-- Kolom kanan: Riwayat berat -->
-    <div class="profil-col-side">
+    <!-- Kolom kanan: Riwayat Timbangan + Rencana Sebelumnya -->
+    <div class="profil-col-side" style="display:flex; flex-direction:column; gap:20px;">
+      
+      <!-- Card 1: Riwayat Timbangan -->
       <div class="kartu profil-riwayat-card">
-        <h3 style="margin-bottom:14px;">📋 Riwayat Timbangan</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h3 style="margin:0; font-size:1.05rem; display:flex; align-items:center; gap:6px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--hijau)"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            Riwayat Timbangan
+          </h3>
+        </div>
+
         <?php
         $sebelum = null;
         $baris = [];
         foreach ($catatan as $c) { $baris[] = [$c, $sebelum]; $sebelum = (float)$c['berat_kg']; }
         if (empty($baris)): ?>
           <div class="profil-riwayat-kosong">
-            <div style="font-size:2rem; margin-bottom:8px;">⚖️</div>
+            <div style="display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:14px;background:var(--mint);color:var(--hijau);margin:0 auto 8px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="21"/><path d="M5 21h14"/><path d="M5 12H2l3-3 3 3"/><path d="M19 12h3l-3-3-3 3"/></svg>
+            </div>
             <p>Belum ada catatan timbangan.</p>
             <p class="teks-redup" style="font-size:0.85rem;">Catat berat badanmu di formulir sebelah kiri.</p>
           </div>
         <?php else: ?>
-          <div class="profil-riwayat-list">
+          <div class="profil-riwayat-list" id="riwayat-timbang-list">
             <?php foreach (array_reverse($baris) as [$c, $sb]):
               $selisih = $sb === null ? null : (float)$c['berat_kg'] - $sb;
               $selisih_teks = $selisih === null ? '' : (($selisih > 0 ? '+' : '') . nf($selisih, 1) . ' kg');
@@ -326,8 +349,43 @@ include BASE_DIR . 'includes/header.php';
               </div>
             <?php endforeach; ?>
           </div>
+          <div id="riwayat-timbang-pagin"></div>
         <?php endif; ?>
       </div>
+
+      <!-- Card 2: Rencana Sebelumnya (Dipindahkan ke sini agar simetris) -->
+      <div class="kartu profil-rencana-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h3 style="margin:0; font-size:1.05rem; display:flex; align-items:center; gap:6px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--hijau);"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            Rencana Sebelumnya
+          </h3>
+        </div>
+
+        <?php if (empty($rencana_lama)): ?>
+          <div style="text-align:center; padding:20px 10px; color:var(--teks-redup); font-size:0.85rem;">
+            Belum ada riwayat rencana diet sebelumnya.
+          </div>
+        <?php else: ?>
+          <div style="display:flex; flex-direction:column; gap:8px;" id="rencana-lama-list">
+            <?php foreach ($rencana_lama as $r): ?>
+              <div class="profil-rencana-lama-baris" style="padding:10px 12px; background:var(--latar); border:1px solid var(--garis); border-radius:var(--radius-kecil);">
+                <div>
+                  <strong style="font-size:0.88rem; color:var(--gelap); display:block;"><?= h($label[$r['tujuan']]) ?></strong>
+                  <div class="teks-redup" style="font-size:0.78rem; margin-top:2px;">
+                    <?= h(tgl($r['tanggal_mulai'])) ?> &middot; <?= nf($r['berat_awal'], 1) ?> &rarr; <?= nf($r['berat_target'], 1) ?> kg
+                  </div>
+                </div>
+                <span class="badge" style="background:<?= $r['status'] === 'selesai' ? 'var(--normal)' : '#888' ?>; font-size:0.72rem; padding:3px 8px; flex-shrink:0;">
+                  <?= h(ucfirst($r['status'])) ?>
+                </span>
+              </div>
+            <?php endforeach; ?>
+          </div>
+          <div id="rencana-lama-pagin"></div>
+        <?php endif; ?>
+      </div>
+
     </div>
 
   </div>
@@ -346,24 +404,44 @@ include BASE_DIR . 'includes/header.php';
         y: { title: { display: true, text: 'kg' } }
       }, plugins: { legend: { position: 'bottom', labels: { font: { size: 12 } } } } }
     });
-  </script>
-<?php endif; ?>
 
-<?php if ($rencana_lama): ?>
-  <div style="margin-top:32px;">
-    <h3 style="margin-bottom:12px;">Rencana Sebelumnya</h3>
-    <div style="display:flex; flex-direction:column; gap:8px;">
-      <?php foreach ($rencana_lama as $r): ?>
-        <div class="profil-rencana-lama-baris">
-          <div>
-            <strong><?= h($label[$r['tujuan']]) ?></strong>
-            <div class="teks-redup" style="font-size:0.83rem; margin-top:2px;"><?= h(tgl($r['tanggal_mulai'])) ?> &middot; <?= nf($r['berat_awal'], 1) ?> &rarr; <?= nf($r['berat_target'], 1) ?> kg &middot; <?= (int)$r['durasi_hari'] ?> hari</div>
+    // Paginasi Instan (Client-Side) tanpa reload
+    function pasangPaginasi(listId, paginId, perHalaman) {
+      const listEl = document.getElementById(listId);
+      const paginEl = document.getElementById(paginId);
+      if (!listEl || !paginEl) return;
+
+      const baris = Array.from(listEl.children);
+      const total = baris.length;
+      if (total <= perHalaman) return;
+
+      let hal = 1;
+      const totalHal = Math.ceil(total / perHalaman);
+
+      function tampilkan(h) {
+        hal = Math.max(1, Math.min(h, totalHal));
+        baris.forEach((el, idx) => {
+          el.style.display = (idx >= (hal - 1) * perHalaman && idx < hal * perHalaman) ? '' : 'none';
+        });
+
+        paginEl.innerHTML = `
+          <div class="profil-pagin-bar">
+            <button type="button" class="profil-pagin-btn" ${hal === 1 ? 'disabled' : ''} onclick="window.__p_${listId}(${hal - 1})" title="Sebelumnya">&lsaquo;</button>
+            <span class="profil-pagin-info">Hal <strong>${hal}</strong> dari <strong>${totalHal}</strong></span>
+            <button type="button" class="profil-pagin-btn" ${hal === totalHal ? 'disabled' : ''} onclick="window.__p_${listId}(${hal + 1})" title="Berikutnya">&rsaquo;</button>
           </div>
-          <span class="badge" style="background:<?= $r['status'] === 'selesai' ? 'var(--normal)' : '#888' ?>; flex-shrink:0;"><?= h(ucfirst($r['status'])) ?></span>
-        </div>
-      <?php endforeach; ?>
-    </div>
-  </div>
+        `;
+      }
+
+      window['__p_' + listId] = tampilkan;
+      tampilkan(1);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      pasangPaginasi('riwayat-timbang-list', 'riwayat-timbang-pagin', 5);
+      pasangPaginasi('rencana-lama-list', 'rencana-lama-pagin', 3);
+    });
+  </script>
 <?php endif; ?>
 
 <p class="catatan" style="margin-top:20px;">Perhitungan bersifat perkiraan dan edukatif, bukan pengganti saran dokter atau ahli gizi.</p>

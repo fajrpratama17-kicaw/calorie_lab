@@ -300,18 +300,20 @@ input[type="number"] {
 }
 
 /* ==========================================================================
-   NAVBAR (Warm Frosted Glass & Smooth Pill Items)
+   NAVBAR (Deep Forest Green Theme - Matching Image Banner #1E4032)
    ========================================================================== */
 .navbar {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(250, 248, 245, 0.92);
+  background: #1E4032;
+  background: rgba(30, 64, 50, 0.96);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--garis);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 20px rgba(16, 38, 28, 0.18);
   padding: 10px 0;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .nav-isi {
@@ -338,7 +340,7 @@ input[type="number"] {
 }
 
 .nav-desktop-links .nav-link-item {
-  color: var(--teks-redup);
+  color: rgba(255, 255, 255, 0.82);
   text-decoration: none;
   font-size: 0.88rem;
   font-weight: 600;
@@ -349,15 +351,16 @@ input[type="number"] {
 }
 
 .nav-desktop-links .nav-link-item:hover {
-  color: var(--gelap);
-  background: var(--mint);
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.14);
   transform: translateY(-1px);
 }
 
 .nav-desktop-links .nav-link-item.aktif {
-  color: var(--hijau);
-  background: var(--mint);
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.22);
   font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 
 .nav-brand {
@@ -370,7 +373,7 @@ input[type="number"] {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--gelap);
+  color: #FFFFFF;
   font-size: 1.45rem;
   font-weight: 800;
   text-decoration: none;
@@ -392,13 +395,27 @@ input[type="number"] {
   transform: rotate(12deg) scale(1.1);
 }
 
+.logo-ikon {
+  font-size: 0.82rem !important;
+  font-weight: 800 !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
 .logo-teks {
-  color: var(--gelap);
+  color: #FFFFFF;
 }
 
 .logo-teks em {
   font-style: normal;
-  color: var(--hijau);
+  color: #9AE6B4;
 }
 
 .nav-menu {
@@ -408,7 +425,7 @@ input[type="number"] {
 }
 
 .nav-menu a, .nav-tautan, .nav-link-subtle {
-  color: var(--teks-redup);
+  color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
   font-size: 0.92rem;
   font-weight: 600;
@@ -418,20 +435,50 @@ input[type="number"] {
 }
 
 .nav-menu a:not(.tombol):hover, .nav-tautan:hover, .nav-link-subtle:hover {
-  color: var(--gelap);
-  background: var(--mint);
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.14);
   transform: translateY(-1px);
 }
 
 .nav-menu a.tombol:not(.tombol-keluar):not(.tombol-sekunder):not(.sekunder) {
-  color: #fff !important;
+  background: #FFFFFF !important;
+  color: #1E4032 !important;
+  font-weight: 750 !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18) !important;
 }
 
-.nav-menu a.tombol:hover {
-  background: var(--hijau-hover) !important;
-  color: #fff !important;
+.nav-menu a.tombol:not(.tombol-keluar):not(.tombol-sekunder):not(.sekunder):hover {
+  background: #E8F2EC !important;
+  color: #12281F !important;
   transform: translateY(-2px);
-  box-shadow: var(--bayangan-tombol-hover);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25) !important;
+}
+
+.navbar .tombol-keluar {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: none !important;
+}
+
+.navbar .tombol-keluar:hover {
+  background: #B45148 !important;
+  color: #FFFFFF !important;
+  border-color: #B45148 !important;
+  transform: translateY(-1px);
+}
+
+.sidebar-toggle-nav {
+  color: #FFFFFF !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+}
+
+.sidebar-toggle-nav:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: #FFFFFF !important;
 }
 
 /* ==========================================================================
@@ -1221,7 +1268,7 @@ input[type="checkbox"] {
   background: var(--mint);
   color: var(--hijau);
   margin-bottom: 12px;
-  font-size: 1.15rem;
+  font-size: 0;
 }
 
 .progress-bar-bg {
@@ -2523,11 +2570,71 @@ input[type="checkbox"] {
   border-radius: var(--radius-pil);
 }
 
-.catatan-filter-bar {
-  margin-bottom: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.catatan-status-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--radius-pil);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.catatan-status-badge.status-ideal {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.catatan-status-badge.status-rendah {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.catatan-status-badge.status-lebih {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.catatan-status-badge.status-belum {
+  background: var(--latar);
+  color: var(--teks-redup);
+}
+
+.catatan-edukasi-box {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: var(--radius-kecil);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  border: 1px solid transparent;
+}
+
+.catatan-edukasi-box p {
+  margin: 0;
+}
+
+.catatan-edukasi-box.status-ideal {
+  background: #ECFDF5;
+  border-color: #A7F3D0;
+  color: #065F46;
+}
+
+.catatan-edukasi-box.status-rendah {
+  background: #FFFBEB;
+  border-color: #FDE68A;
+  color: #92400E;
+}
+
+.catatan-edukasi-box.status-lebih {
+  background: #FEF2F2;
+  border-color: #FECACA;
+  color: #991B1B;
+}
+
+.catatan-edukasi-box.status-belum {
+  background: var(--latar);
+  border-color: var(--garis);
+  color: var(--teks-redup);
 }
 
 .catatan-two-col {
@@ -2535,6 +2642,78 @@ input[type="checkbox"] {
   grid-template-columns: 380px 1fr;
   gap: 20px;
   align-items: start;
+}
+
+.catatan-cta-card {
+  padding: 24px 20px;
+  text-align: center;
+  background: linear-gradient(180deg, var(--mint) 0%, var(--permukaan) 100%);
+  border: 1px solid var(--garis);
+  margin-bottom: 16px;
+}
+
+.catatan-cta-ikon {
+  font-size: 2.2rem;
+  margin-bottom: 8px;
+}
+
+.catatan-cta-judul {
+  font-size: 1.1rem;
+  margin-bottom: 6px;
+  color: var(--gelap);
+}
+
+.catatan-cta-desc {
+  font-size: 0.85rem;
+  color: var(--teks-redup);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.catatan-saran-card {
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.catatan-saran-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--garis);
+}
+
+.catatan-saran-card-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--hijau);
+}
+
+.catatan-saran-card-sub {
+  font-size: 0.78rem;
+  color: var(--teks-redup);
+}
+
+.catatan-saran-lihat-semua {
+  display: block;
+  margin-top: 12px;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--hijau);
+  text-decoration: none;
+}
+
+.catatan-saran-lihat-semua:hover {
+  text-decoration: underline;
+}
+
+.catatan-target-penuh,
+.catatan-riwayat-info-card {
+  padding: 24px 20px;
+  text-align: center;
+  margin-bottom: 16px;
 }
 
 .catatan-form-card {
@@ -2819,25 +2998,32 @@ input[type="checkbox"] {
   font-size: 1.15rem;
 }
 
-.profil-status-bar {
+.profil-status-bar,
+body.halaman-dashboard .profil-status-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  padding: 20px 24px;
+  background: #FFFFFF !important;
+  border: 1px solid var(--garis);
+  border-radius: var(--radius-kartu);
+  box-shadow: var(--bayangan);
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 14px;
 }
 
 .profil-status-label {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .profil-status-tujuan {
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1.15rem;
+  font-weight: 800;
   color: var(--gelap);
+  letter-spacing: -0.01em;
 }
 
 .profil-status-badge {
@@ -2865,9 +3051,11 @@ input[type="checkbox"] {
   gap: 12px;
 }
 
-.profil-stat-current {
-  border-color: var(--hijau);
-  background: var(--mint);
+.profil-stat-current,
+body.halaman-dashboard .profil-stat-current {
+  border-color: var(--hijau) !important;
+  background: #F0FDF4 !important;
+  box-shadow: 0 4px 14px rgba(30, 64, 50, 0.08);
 }
 
 .profil-stat-ikon {
@@ -3098,8 +3286,16 @@ input[type="checkbox"] {
 }
 
 .rencana-stat-ikon {
-  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--mint);
+  color: var(--hijau);
   flex-shrink: 0;
+  font-size: 0 !important;
 }
 
 .rencana-stat-isi {
@@ -3230,9 +3426,17 @@ input[type="checkbox"] {
 }
 
 .rencana-panduan-ikon {
-  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--mint);
+  color: var(--hijau);
   flex-shrink: 0;
   margin-top: 1px;
+  font-size: 0 !important;
 }
 
 .rencana-panduan-item p {
@@ -3267,3 +3471,492 @@ input[type="checkbox"] {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   USER DASHBOARD BACKGROUND (Healthy Diet Green Theme - Gambar 2)
+   ========================================================================== */
+body.halaman-dashboard {
+  background-color: #FAF8F5;
+  background-image: url('../img/bg-diet-green.jpg');
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: cover;
+  background-attachment: fixed;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  min-height: 100vh;
+}
+
+/* ── Page Hero Header (Opsi 3 — Selaras dengan Dashboard) ── */
+.page-hero-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: #FFFFFF !important;
+  border: 1px solid var(--garis);
+  border-radius: var(--radius-kartu);
+  box-shadow: var(--bayangan);
+  padding: 22px 28px;
+  margin-bottom: 28px;
+}
+
+.page-hero-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--mint);
+  color: var(--hijau);
+}
+
+.page-hero-icon svg {
+  display: block;
+}
+
+.page-hero-teks {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.page-hero-teks h2 {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--gelap);
+  line-height: 1.2;
+}
+
+.page-hero-teks p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--teks-redup);
+  line-height: 1.5;
+}
+
+/* ── Kosong-state: ganti emoji icon menjadi SVG box ── */
+.kosong-state-ikon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: var(--mint);
+  color: var(--hijau);
+  margin: 0 auto 16px;
+  font-size: 0 !important; /* sembunyi emoji jika ada */
+}
+
+.kosong-state-ikon svg {
+  display: block;
+}
+
+/* ── Profil stat-ikon: ganti emoji ke SVG ── */
+.profil-stat-ikon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--mint);
+  color: var(--hijau);
+  flex-shrink: 0;
+  font-size: 0 !important;
+}
+
+.profil-stat-ikon svg {
+  display: block;
+}
+
+/* Kartu & Header Solid Putih (100% Solid, Tanpa Transparansi) */
+body.halaman-dashboard .dashboard-heading {
+  background: #FFFFFF !important;
+  opacity: 1 !important;
+  padding: 24px 28px;
+  border-radius: var(--radius-kartu);
+  border: 1px solid var(--garis);
+  box-shadow: var(--bayangan);
+}
+
+body.halaman-dashboard .dashboard-stat,
+body.halaman-dashboard .dashboard-banner,
+body.halaman-dashboard .dashboard-tips-card,
+body.halaman-dashboard .dashboard-card-target,
+body.halaman-dashboard .kartu,
+body.halaman-dashboard .kotak-form,
+body.halaman-dashboard .filter-bar,
+body.halaman-dashboard .menu-kartu,
+body.halaman-dashboard .hasil,
+body.halaman-dashboard .kosong,
+body.halaman-dashboard .rencana-card,
+body.halaman-dashboard .profil-header {
+  background: #FFFFFF !important;
+  opacity: 1 !important;
+  border: 1px solid var(--garis);
+  box-shadow: var(--bayangan);
+}
+
+/* Judul bagian polos natural (Opsi 1: Clean Minimalist) */
+body.halaman-dashboard .dashboard-section-heading {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin-bottom: 18px;
+}
+
+body.halaman-dashboard footer {
+  background: #FFFFFF !important;
+  border-top: 1px solid var(--garis);
+}
+
+/* ── Harmonized BMI Layout & Horizontal Classification Grid ── */
+.bmi-grid-harmonized {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.bmi-card-equal {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.bmi-card-equal > form {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.bmi-klasifikasi-card {
+  margin-top: 24px;
+  padding: 24px;
+}
+
+.bmi-klasifikasi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.bmi-klasifikasi-item {
+  background: var(--latar);
+  border: 1.5px solid var(--garis);
+  border-radius: var(--radius-kartu);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.bmi-klasifikasi-item.aktif {
+  background: #F0FDF4;
+  border-color: var(--hijau);
+  box-shadow: 0 4px 14px rgba(30, 64, 50, 0.08);
+}
+
+.bmi-klasifikasi-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bmi-klasifikasi-item-range {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--gelap);
+  letter-spacing: -0.02em;
+}
+
+.bmi-klasifikasi-tag-aktif {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--hijau);
+  color: #FFFFFF;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-pil);
+}
+
+@media (max-width: 900px) {
+  .bmi-grid-harmonized {
+    grid-template-columns: 1fr;
+  }
+  .bmi-klasifikasi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .bmi-klasifikasi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Harmonized Catatan Kalori Layout ── */
+.catatan-filter-bar {
+  background: #FFFFFF !important;
+  border: 1px solid var(--garis);
+  border-radius: var(--radius-kartu);
+  box-shadow: var(--bayangan);
+  padding: 14px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.catatan-filter-bar form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.catatan-filter-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--garis);
+  display: inline-block;
+}
+
+.catatan-filter-riwayat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.catatan-filter-bar .tanggal-cepat {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.catatan-two-col {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.catatan-col-form,
+.catatan-col-list {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.catatan-saran-card,
+.catatan-target-penuh,
+.catatan-riwayat-info-card,
+.catatan-list-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 440px;
+  margin-bottom: 0 !important;
+}
+
+.catatan-saran-grid {
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.catatan-saran-grid::-webkit-scrollbar {
+  width: 5px;
+}
+
+.catatan-saran-grid::-webkit-scrollbar-thumb {
+  background: var(--garis);
+  border-radius: 4px;
+}
+
+@media (max-width: 900px) {
+  .catatan-two-col {
+    grid-template-columns: 1fr;
+  }
+  .catatan-saran-card,
+  .catatan-list-card {
+    min-height: auto;
+  }
+}
+
+/* ── Rencana Diet: Opsi B SaaS Layout ── */
+.rencana-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.rencana-mini-card {
+  background: var(--latar);
+  border: 1.5px solid var(--garis);
+  border-radius: var(--radius-kartu);
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-decoration: none;
+  color: var(--gelap);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 140px;
+}
+
+.rencana-mini-card:hover {
+  background: #FFFFFF;
+  border-color: var(--hijau);
+  box-shadow: 0 6px 16px rgba(30, 64, 50, 0.08);
+  transform: translateY(-2px);
+}
+
+.rencana-mini-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--mint);
+  color: var(--hijau);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.rencana-mini-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gelap);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.rencana-mini-card-desc {
+  font-size: 0.8rem;
+  color: var(--teks-redup);
+  line-height: 1.4;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.rencana-mini-card-link {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--hijau);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rencana-opsi-b-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--garis);
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.rencana-opsi-b-status-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--teks-redup);
+}
+
+.rencana-opsi-b-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 860px) {
+  .rencana-mini-grid {
+    grid-template-columns: 1fr;
+  }
+  .rencana-opsi-b-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .rencana-opsi-b-actions {
+    width: 100%;
+  }
+  .rencana-opsi-b-actions form {
+    flex: 1;
+  }
+  .rencana-opsi-b-actions .tombol {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* ── Profil & Progres: Pagination Styles ── */
+.profil-pagin-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--garis);
+}
+
+.profil-pagin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pil);
+  border: 1px solid var(--garis);
+  background: #FFFFFF;
+  color: var(--gelap);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.profil-pagin-btn:hover:not(:disabled) {
+  background: var(--hijau);
+  color: #FFFFFF;
+  border-color: var(--hijau);
+}
+
+.profil-pagin-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.profil-pagin-info {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--teks-redup);
+}
+

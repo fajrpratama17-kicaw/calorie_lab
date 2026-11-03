@@ -129,9 +129,14 @@ $judul = 'Rencana Diet';
 include BASE_DIR . 'includes/header.php';
 ?>
 
-<div class="rencana-page-header">
-  <h2>Rencana Diet</h2>
-  <p class="teks-redup">Program penurunan, kenaikan, atau pemeliharaan berat badan yang dipersonalisasi.</p>
+<div class="page-hero-header">
+  <div class="page-hero-icon">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+  </div>
+  <div class="page-hero-teks">
+    <h2>Rencana Diet</h2>
+    <p>Program penurunan, kenaikan, atau pemeliharaan berat badan yang dipersonalisasi.</p>
+  </div>
 </div>
 
 <?php if ($pesan): ?><div class="alert sukses"><?= h($pesan) ?></div><?php endif; ?>
@@ -139,7 +144,9 @@ include BASE_DIR . 'includes/header.php';
 
 <?php if (!$bmi): ?>
   <div class="kosong-state">
-    <div class="kosong-state-ikon">📏</div>
+    <div class="kosong-state-ikon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+    </div>
     <h3>Data BMI belum tersedia</h3>
     <p>Rencana diet dibuat dari data BMI-mu. Hitung BMI terlebih dahulu.</p>
     <a class="tombol" href="bmi.php">Hitung BMI sekarang &rarr;</a>
@@ -157,43 +164,63 @@ include BASE_DIR . 'includes/header.php';
 
   <?php if ($durasi_selesai): ?>
     <div class="alert sukses" style="margin-bottom:18px">
-      <strong>🎉 Masa program telah selesai!</strong> Target durasi rencana dietmu telah terpenuhi. Tandai sebagai selesai untuk menyimpan rekam jejaknya, atau buat program baru.
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>
+      <strong>Masa program telah selesai!</strong> Target durasi rencana dietmu telah terpenuhi. Tandai sebagai selesai untuk menyimpan rekam jejaknya, atau buat program baru.
     </div>
   <?php endif; ?>
 
-  <!-- Header rencana aktif -->
-  <div class="rencana-aktif-header">
-    <div>
-      <div class="rencana-aktif-tujuan"><?= h($label[$aktif['tujuan']]) ?></div>
-      <div class="teks-redup" style="font-size:0.85rem; margin-top:4px;">
-        <?= h(tgl($aktif['tanggal_mulai'])) ?> &ndash; <?= h(tgl($selesai_str)) ?>
-        <?php if ($durasi_selesai): ?> &middot; <span class="badge" style="background:var(--normal);">Durasi tercapai</span><?php endif; ?>
+  <!-- Header rencana aktif (Menyatu dengan Progress Bar Durasi) -->
+  <div class="rencana-aktif-header" style="flex-direction:column; align-items:stretch; gap:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+      <div>
+        <div class="rencana-aktif-tujuan"><?= h($label[$aktif['tujuan']]) ?></div>
+        <div class="teks-redup" style="font-size:0.85rem; margin-top:4px;">
+          <?= h(tgl($aktif['tanggal_mulai'])) ?> &ndash; <?= h(tgl($selesai_str)) ?>
+          <?php if ($durasi_selesai): ?> &middot; <span class="badge" style="background:var(--normal);">Durasi tercapai</span><?php endif; ?>
+        </div>
+      </div>
+      <div class="rencana-hari-counter">
+        <span class="rencana-hari-angka"><?= $hari_ke ?></span>
+        <span class="rencana-hari-label">dari <?= (int)$aktif['durasi_hari'] ?> hari</span>
       </div>
     </div>
-    <div class="rencana-hari-counter">
-      <span class="rencana-hari-angka"><?= $hari_ke ?></span>
-      <span class="rencana-hari-label">dari <?= (int)$aktif['durasi_hari'] ?> hari</span>
+
+    <!-- Progress bar timeline program yang menyatu rapi -->
+    <div style="border-top:1px solid var(--garis); padding-top:14px;">
+      <div class="rencana-progress-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span style="font-size:0.82rem; font-weight:600; color:var(--teks-redup);">Progres timeline program</span>
+        <strong style="color:var(--hijau); font-size:0.88rem;"><?= min(100, $persen) ?>%</strong>
+      </div>
+      <div class="progres" style="height:8px; margin:0;">
+        <div class="progres-isi" style="width:<?= min(100, $persen) ?>%"></div>
+      </div>
     </div>
   </div>
 
-  <!-- Stat cards -->
+  <!-- Stat cards 3 kolom -->
   <div class="rencana-stat-grid">
     <div class="rencana-stat-card">
-      <span class="rencana-stat-ikon">⚖️</span>
+      <span class="rencana-stat-ikon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="21"/><path d="M5 21h14"/><path d="M5 12H2l3-3 3 3"/><path d="M19 12h3l-3-3-3 3"/></svg>
+      </span>
       <div class="rencana-stat-isi">
         <span class="rencana-stat-label">Berat Awal</span>
         <span class="rencana-stat-nilai"><?= nf($aktif['berat_awal'], 1) ?> <small>kg</small></span>
       </div>
     </div>
     <div class="rencana-stat-card">
-      <span class="rencana-stat-ikon">🎯</span>
+      <span class="rencana-stat-ikon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      </span>
       <div class="rencana-stat-isi">
         <span class="rencana-stat-label">Berat Target</span>
         <span class="rencana-stat-nilai"><?= nf($aktif['berat_target'], 1) ?> <small>kg</small></span>
       </div>
     </div>
     <div class="rencana-stat-card">
-      <span class="rencana-stat-ikon">🔥</span>
+      <span class="rencana-stat-ikon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </span>
       <div class="rencana-stat-isi">
         <span class="rencana-stat-label">Target Kalori</span>
         <span class="rencana-stat-nilai"><?= nf($aktif['target_kalori']) ?> <small>kkal/hari</small></span>
@@ -201,34 +228,75 @@ include BASE_DIR . 'includes/header.php';
     </div>
   </div>
 
-  <!-- Progress bar durasi -->
-  <div class="rencana-progress-section">
-    <div class="rencana-progress-label">
-      <span>Progres durasi</span>
-      <strong><?= min(100, $persen) ?>%</strong>
+  <!-- Kartu Aktivitas Harian & Manajemen Program (Opsi B SaaS Style) -->
+  <div class="kartu" style="padding: 24px; margin-top: 20px;">
+    <div>
+      <h3 style="font-size: 1.05rem; margin-bottom: 4px; color: var(--gelap);">Aktivitas Harian Program</h3>
+      <p class="teks-redup" style="font-size: 0.85rem; margin: 0;">Ikuti bimbingan nutrisi dan pantau perkembangan targetmu setiap hari:</p>
     </div>
-    <div class="progres" style="margin-top:6px"><div class="progres-isi" style="width:<?= min(100, $persen) ?>%"></div></div>
-  </div>
 
-  <!-- Aksi navigasi -->
-  <div class="kartu rencana-aksi-card">
-    <p style="margin-bottom:14px; color:var(--teks-redup); font-size:0.9rem;">Pantau perkembangan beratmu secara berkala dan ikuti rekomendasi menu setiap hari.</p>
-    <div class="rencana-aksi-nav">
-      <a class="tombol" href="menu.php">🍽️ Menu Rekomendasi</a>
-      <a class="tombol tombol-sekunder" href="catatan.php">📓 Catatan Kalori</a>
-      <a class="tombol tombol-sekunder" href="profil.php">📊 Perkembangan Berat</a>
+    <!-- Grid 3 Mini Card Interaktif -->
+    <div class="rencana-mini-grid">
+      <!-- 1. Menu Rekomendasi -->
+      <a href="menu.php" class="rencana-mini-card">
+        <div>
+          <div class="rencana-mini-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+          </div>
+          <strong class="rencana-mini-card-title">Menu Rekomendasi</strong>
+          <span class="rencana-mini-card-desc">Paket resep gizi seimbang sesuai kuota target kalori harianmu.</span>
+        </div>
+        <span class="rencana-mini-card-link">Pilih Menu &rarr;</span>
+      </a>
+
+      <!-- 2. Catatan Kalori -->
+      <a href="catatan.php" class="rencana-mini-card">
+        <div>
+          <div class="rencana-mini-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="13" y2="11"/></svg>
+          </div>
+          <strong class="rencana-mini-card-title">Catatan Kalori</strong>
+          <span class="rencana-mini-card-desc">Catat makanan harian dan pantau sisa kuota kalorimu.</span>
+        </div>
+        <span class="rencana-mini-card-link">Catat Asupan &rarr;</span>
+      </a>
+
+      <!-- 3. Perkembangan Berat -->
+      <a href="profil.php" class="rencana-mini-card">
+        <div>
+          <div class="rencana-mini-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          </div>
+          <strong class="rencana-mini-card-title">Perkembangan Berat</strong>
+          <span class="rencana-mini-card-desc">Perbarui data timbangan dan pantau kurva grafik menuju target.</span>
+        </div>
+        <span class="rencana-mini-card-link">Pantau Progres &rarr;</span>
+      </a>
     </div>
-    <div class="rencana-aksi-selesai">
-      <form method="post" style="display:inline">
-        <input type="hidden" name="aksi" value="selesai">
-        <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
-        <button type="submit" class="tombol" onclick="return confirm('Tandai rencana diet ini sebagai selesai?')">✅ Tandai selesai</button>
-      </form>
-      <form method="post" style="display:inline">
-        <input type="hidden" name="aksi" value="batal">
-        <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
-        <button type="submit" class="tombol hapus" onclick="return confirm('Batalkan rencana ini? Catatan yang sudah tersimpan akan tetap ada di riwayat.')">Batalkan rencana</button>
-      </form>
+
+    <!-- Footer Bar: Status Durasi & Tombol Siklus Program -->
+    <div class="rencana-opsi-b-footer">
+      <div class="rencana-opsi-b-status-info">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--hijau);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>Program berakhir pada <strong><?= h(tgl($selesai_str)) ?></strong> &middot; Hari ke-<?= $hari_ke ?> dari <?= (int)$aktif['durasi_hari'] ?> hari</span>
+      </div>
+      <div class="rencana-opsi-b-actions">
+        <form method="post" style="display:inline; margin:0;">
+          <input type="hidden" name="aksi" value="selesai">
+          <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
+          <button type="submit" class="tombol kecil" onclick="return confirm('Tandai rencana diet ini sebagai selesai?')" style="padding:8px 16px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><polyline points="20 6 9 17 4 12"/></svg>
+            Tandai Selesai
+          </button>
+        </form>
+        <form method="post" style="display:inline; margin:0;">
+          <input type="hidden" name="aksi" value="batal">
+          <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
+          <button type="submit" class="tombol hapus kecil" onclick="return confirm('Batalkan rencana ini? Catatan yang sudah tersimpan akan tetap ada di riwayat.')" style="padding:8px 14px; font-size:0.82rem;">
+            Batalkan Rencana
+          </button>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -313,23 +381,32 @@ include BASE_DIR . 'includes/header.php';
     <!-- Kolom kanan: Panduan -->
     <div class="rencana-col-guide">
       <div class="kartu rencana-panduan-card">
-        <h3 style="margin-bottom:14px;">💡 Panduan Singkat</h3>
+        <h3 style="margin-bottom:14px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;margin-right:6px;color:var(--hijau)"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          Panduan Singkat
+        </h3>
         <div class="rencana-panduan-item">
-          <div class="rencana-panduan-ikon">📉</div>
+          <div class="rencana-panduan-ikon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          </div>
           <div>
             <strong>Menurunkan berat</strong>
             <p class="teks-redup" style="font-size:0.85rem; margin-top:3px;">Cocok jika BMI-mu di atas 18,5. Target berat harus lebih rendah dari berat sekarang dengan laju aman maks 1 kg/minggu.</p>
           </div>
         </div>
         <div class="rencana-panduan-item">
-          <div class="rencana-panduan-ikon">📈</div>
+          <div class="rencana-panduan-ikon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+          </div>
           <div>
             <strong>Menaikkan berat</strong>
             <p class="teks-redup" style="font-size:0.85rem; margin-top:3px;">Cocok jika BMI-mu di bawah 25. Target berat harus lebih tinggi dari berat sekarang dengan laju aman maks 0,5 kg/minggu.</p>
           </div>
         </div>
         <div class="rencana-panduan-item">
-          <div class="rencana-panduan-ikon">⚖️</div>
+          <div class="rencana-panduan-ikon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="21"/><path d="M5 21h14"/><path d="M5 12H2l3-3 3 3"/><path d="M19 12h3l-3-3-3 3"/></svg>
+          </div>
           <div>
             <strong>Mempertahankan berat</strong>
             <p class="teks-redup" style="font-size:0.85rem; margin-top:3px;">Cocok untuk semua kategori BMI. Sistem akan menghitung kebutuhan kalori tanpa penyesuaian penurunan/kenaikan.</p>

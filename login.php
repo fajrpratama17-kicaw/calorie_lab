@@ -111,7 +111,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      background: radial-gradient(circle at 15% 15%, #EAF3EE 0%, #FAF8F5 50%, #EDE8E1 100%);
+      background-color: #FAF8F5;
+      background-image: url('<?= base_url('assets/img/bg-diet-green.jpg') ?>');
+      background-repeat: no-repeat;
+      background-position: center center;
+      background-size: cover;
+      background-attachment: fixed;
       font-family: var(--font-utama);
       padding: clamp(16px, 3vw, 36px);
       position: relative;
