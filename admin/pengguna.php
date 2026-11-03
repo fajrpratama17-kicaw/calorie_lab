@@ -122,7 +122,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['pesan_admin_user'] = 'Keamanan: Anda tidak dapat menurunkan role akun admin Anda sendiri.';
             $_SESSION['pesan_admin_user_tipe'] = 'error';
         } else {
-            $up = $pdo->prepare("UPDATE users SET role = ? WHERE id = ?");
+            if ($role_baru === 'pakar') {
+                $up = $pdo->prepare("UPDATE users SET role = ?, status_akun = 'aktif' WHERE id = ?");
+            } else {
+                $up = $pdo->prepare("UPDATE users SET role = ? WHERE id = ?");
+            }
             $up->execute([$role_baru, $target_uid]);
             $_SESSION['pesan_admin_user'] = 'Role akun ' . h($target_user['nama']) . ' berhasil diubah menjadi ' . strtoupper($role_baru) . '.';
             $_SESSION['pesan_admin_user_tipe'] = 'sukses';
@@ -154,10 +158,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['pesan_admin_user'] = 'Keamanan: Anda tidak dapat menghapus akun admin yang sedang Anda gunakan saat ini.';
             $_SESSION['pesan_admin_user_tipe'] = 'error';
         } else {
-            $del = $pdo->prepare("DELETE FROM users WHERE id = ?");
-            $del->execute([$target_uid]);
-            $_SESSION['pesan_admin_user'] = 'Akun pengguna ' . h($target_user['nama']) . ' berhasil dihapus beserta seluruh riwayat terkait.';
-            $_SESSION['pesan_admin_user_tipe'] = 'sukses';
+            try {
+                $pdo->beginTransaction();
+                // Jika user adalah pakar, lepaskan kepemilikan menu_diet agar resep tetap aman di sistem
+                $pdo->prepare("UPDATE menu_diet SET pakar_id = NULL WHERE pakar_id = ?")->execute([$target_uid]);
+                $pdo->prepare("DELETE FROM catatan_gizi WHERE pakar_id = ?")->execute([$target_uid]);
+
+                // Hapus akun pengguna
+                $del = $pdo->prepare("DELETE FROM users WHERE id = ?");
+                $del->execute([$target_uid]);
+                $pdo->commit();
+
+                $_SESSION['pesan_admin_user'] = 'Akun pengguna ' . h($target_user['nama']) . ' berhasil dihapus beserta seluruh riwayat terkait.';
+                $_SESSION['pesan_admin_user_tipe'] = 'sukses';
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                $_SESSION['pesan_admin_user'] = 'Gagal menghapus akun pengguna: masih terdapat data riwayat yang terikat.';
+                $_SESSION['pesan_admin_user_tipe'] = 'error';
+            }
         }
         header('Location: ' . base_url('admin/pengguna.php'));
         exit;
@@ -182,16 +200,40 @@ if ($filter_role !== '' && in_array($filter_role, ['user', 'admin', 'pakar'], tr
     $params[] = $filter_role;
 }
 
+// Opsi Pengurutan Pengguna
+$opsi_urut = [
+    'nama_asc'  => ['label' => 'Nama (A → Z)', 'sql' => 'u.nama ASC'],
+    'terbaru'   => ['label' => 'Terbaru Terdaftar', 'sql' => 'u.id DESC'],
+    'nama_desc' => ['label' => 'Nama (Z → A)', 'sql' => 'u.nama DESC'],
+    'role'      => ['label' => 'Role (Admin & Pakar Teratas)', 'sql' => "FIELD(u.role, 'admin', 'pakar', 'user'), u.nama ASC"],
+];
+$urut = $_GET['urut'] ?? 'nama_asc';
+if (!isset($opsi_urut[$urut])) {
+    $urut = 'nama_asc';
+}
+$sql_order = $opsi_urut[$urut]['sql'];
+
 // Hitung total untuk pagination
 $st_count = $pdo->prepare("SELECT COUNT(*)" . $sql_base);
 $st_count->execute($params);
 $total_pengguna = (int)$st_count->fetchColumn();
 
-// Pagination (20 per halaman)
-$per_hal = 20;
+// Pagination (10 per halaman, konsisten dengan katalog makanan)
+$per_hal = 10;
 $total_hal = max(1, (int)ceil($total_pengguna / $per_hal));
 $hal = max(1, min((int)($_GET['hal'] ?? 1), $total_hal));
 $offset = ($hal - 1) * $per_hal;
+$mulai_baris = $total_pengguna > 0 ? $offset + 1 : 0;
+$akhir_baris = min($offset + $per_hal, $total_pengguna);
+
+// Helper pembentuk URL pagination
+$buat_url_hal_user = function($h) use ($cari_user, $filter_role, $urut) {
+    $qs = ['hal' => $h];
+    if ($cari_user !== '') $qs['cari'] = $cari_user;
+    if ($filter_role !== '') $qs['role'] = $filter_role;
+    if ($urut !== '' && $urut !== 'nama_asc') $qs['urut'] = $urut;
+    return base_url('admin/pengguna.php?' . http_build_query($qs));
+};
 
 // Ambil data halaman aktif
 $sql_data = "
@@ -200,7 +242,7 @@ $sql_data = "
            (SELECT COUNT(*) FROM rencana_diet WHERE user_id = u.id) AS total_rencana,
            (SELECT bmi FROM riwayat_bmi WHERE user_id = u.id ORDER BY id DESC LIMIT 1) AS bmi_terakhir
     " . $sql_base . "
-    ORDER BY u.id DESC
+    ORDER BY " . $sql_order . "
     LIMIT $per_hal OFFSET $offset
 ";
 $st_data = $pdo->prepare($sql_data);
@@ -218,25 +260,43 @@ include BASE_DIR . 'includes/header.php';
 <?php endif; ?>
 
 <!-- FILTER DAN PENCARIAN -->
-<div class="kartu" style="padding: 20px; margin-bottom: 20px;">
-  <form method="get" action="<?= base_url('admin/pengguna.php') ?>" style="display: flex; gap: 10px; flex-wrap: wrap;">
-    <input type="text" name="cari" value="<?= h($cari_user) ?>" placeholder="Cari berdasarkan nama atau email..." style="flex: 2; min-width: 200px; margin: 0;">
-    <select name="role" style="flex: 1; min-width: 140px; margin: 0;">
+<div class="kartu" style="padding: 20px 24px; margin-bottom: 20px; background: #FFFFFF !important;">
+  <form method="get" action="<?= base_url('admin/pengguna.php') ?>" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 0;">
+    <div style="position: relative; flex: 2; min-width: 200px;">
+      <input type="text" name="cari" value="<?= h($cari_user) ?>" placeholder="Cari nama atau email..." style="width: 100%; margin: 0; padding-left: 36px; height: 42px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--teks-redup); pointer-events: none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+
+    <select name="role" style="flex: 1; min-width: 140px; margin: 0; height: 42px;">
       <option value="">Semua Role</option>
       <option value="user"  <?= $filter_role === 'user'  ? 'selected' : '' ?>>User Biasa</option>
       <option value="pakar" <?= $filter_role === 'pakar' ? 'selected' : '' ?>>Pakar Gizi</option>
       <option value="admin" <?= $filter_role === 'admin' ? 'selected' : '' ?>>Admin</option>
     </select>
-    <button type="submit" class="tombol kecil" style="margin: 0; padding: 0 24px;">Filter</button>
-    <?php if ($cari_user !== '' || $filter_role !== ''): ?>
-      <a href="<?= base_url('admin/pengguna.php') ?>" class="tombol sekunder kecil" style="margin: 0;">Reset</a>
+
+    <select name="urut" style="flex: 1.2; min-width: 170px; margin: 0; height: 42px;">
+      <?php foreach ($opsi_urut as $k => $o): ?>
+        <option value="<?= $k ?>" <?= $urut === $k ? 'selected' : '' ?>><?= $o['label'] ?></option>
+      <?php endforeach; ?>
+    </select>
+
+    <button type="submit" class="tombol kecil" style="margin: 0; padding: 0 22px; height: 42px; display: inline-flex; align-items: center; gap: 6px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Filter
+    </button>
+
+    <?php if ($cari_user !== '' || $filter_role !== '' || $urut !== 'nama_asc'): ?>
+      <a href="<?= base_url('admin/pengguna.php') ?>" class="tombol sekunder kecil" style="margin: 0; height: 42px; display: inline-flex; align-items: center; gap: 4px; padding: 0 14px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Reset
+      </a>
     <?php endif; ?>
   </form>
 </div>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 12px;">
   <span class="teks-redup" style="font-size: 0.9rem;">
-    Menampilkan <b><?= count($daftar_user) ?></b> dari total <b><?= $total_pengguna ?></b> akun terdaftar
+    Menampilkan <b><?= $mulai_baris ?> - <?= $akhir_baris ?></b> dari total <b><?= number_format($total_pengguna, 0, ',', '.') ?></b> akun terdaftar
   </span>
   <button type="button" class="tombol kecil" onclick="bukaModalTambahUser()">
     + Tambah Pengguna Baru
@@ -244,7 +304,7 @@ include BASE_DIR . 'includes/header.php';
 </div>
 
 <!-- TABEL PENGGUNA -->
-<div class="kartu" style="padding: 16px; overflow-x: auto;">
+<div class="kartu" style="padding: 0; overflow-x: auto; background: #FFFFFF !important; border: 1px solid var(--garis); border-radius: var(--radius-kartu); box-shadow: var(--bayangan-kartu);">
   <table class="admin-table">
     <thead>
       <tr>
@@ -311,14 +371,15 @@ include BASE_DIR . 'includes/header.php';
                 </form>
 
                 <!-- EDIT NAMA & EMAIL -->
-                <button type="button" class="tombol sekunder kecil" style="font-size: 0.76rem; padding: 5px 9px;"
+                <button type="button" class="tombol sekunder kecil" style="font-size: 0.76rem; padding: 5px 9px; display: inline-flex; align-items: center; gap: 4px;"
                         title="Edit nama dan email"
                         onclick="bukaModalEditUser(<?= $u['id'] ?>, <?= h(json_encode($u['nama'])) ?>, <?= h(json_encode($u['email'])) ?>)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                   Edit
                 </button>
 
                 <!-- RESET PASSWORD -->
-                <button type="button" class="tombol sekunder kecil" style="font-size: 0.76rem; padding: 5px 9px;"
+                <button type="button" class="tombol sekunder kecil" style="font-size: 0.76rem; padding: 5px 9px; display: inline-flex; align-items: center; gap: 4px;"
                         title="Reset kata sandi pengguna"
                         onclick="
                           var p = prompt('Masukkan kata sandi baru untuk <?= h(addslashes($u['nama'])) ?> (minimal 6 karakter):');
@@ -331,7 +392,8 @@ include BASE_DIR . 'includes/header.php';
                             alert('Kata sandi harus minimal 6 karakter!');
                           }
                         ">
-                  Reset Sandi
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  Reset
                 </button>
 
                 <!-- HAPUS AKUN -->
@@ -341,7 +403,8 @@ include BASE_DIR . 'includes/header.php';
                     <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
                     <input type="hidden" name="aksi" value="hapus_user">
                     <input type="hidden" name="target_user_id" value="<?= $u['id'] ?>">
-                    <button type="submit" class="tombol kecil" style="background: #C44536; font-size: 0.76rem; padding: 5px 9px;" title="Hapus akun">
+                    <button type="submit" class="tombol kecil" style="background: #C44536; font-size: 0.76rem; padding: 5px 9px; display: inline-flex; align-items: center; gap: 4px;" title="Hapus akun">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                       Hapus
                     </button>
                   </form>
@@ -354,30 +417,60 @@ include BASE_DIR . 'includes/header.php';
       <?php endif; ?>
     </tbody>
   </table>
-</div>
 
-<!-- PAGINATION -->
-<?php if ($total_hal > 1): ?>
-  <?php
-    $qs = http_build_query(array_filter(['cari' => $cari_user, 'role' => $filter_role]));
-    $qs_prefix = $qs ? $qs . '&' : '';
-    $awal = max(1, $hal - 2);
-    $akhir = min($total_hal, $hal + 2);
-  ?>
-  <div style="display: flex; justify-content: center; gap: 6px; margin-top: 20px; flex-wrap: wrap;">
-    <?php if ($hal > 1): ?>
-      <a href="<?= base_url('admin/pengguna.php?' . $qs_prefix . 'hal=' . ($hal - 1)) ?>" class="tombol sekunder kecil" style="padding: 6px 12px;">Sebelumnya</a>
-    <?php endif; ?>
-    <?php for ($p = $awal; $p <= $akhir; $p++): ?>
-      <a href="<?= base_url('admin/pengguna.php?' . $qs_prefix . 'hal=' . $p) ?>"
-         class="tombol <?= $p === $hal ? '' : 'sekunder' ?> kecil"
-         style="padding: 6px 12px;"><?= $p ?></a>
-    <?php endfor; ?>
-    <?php if ($hal < $total_hal): ?>
-      <a href="<?= base_url('admin/pengguna.php?' . $qs_prefix . 'hal=' . ($hal + 1)) ?>" class="tombol sekunder kecil" style="padding: 6px 12px;">Berikutnya</a>
-    <?php endif; ?>
-  </div>
-<?php endif; ?>
+  <!-- TABLE FOOTER PAGINATION BAR (Di Dalam Kartu Tabel, Rapi & Centered) -->
+  <?php if ($total_pengguna > 0): ?>
+    <?php
+    $max_angka = 5;
+    $mulai_hal = max(1, $hal - 2);
+    $akhir_hal = min($total_hal, $mulai_hal + $max_angka - 1);
+    if ($akhir_hal - $mulai_hal + 1 < $max_angka) {
+        $mulai_hal = max(1, $akhir_hal - $max_angka + 1);
+    }
+    ?>
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px 20px; border-top: 1px solid var(--garis); background: #F8FAF8; gap: 8px; border-bottom-left-radius: var(--radius-kartu); border-bottom-right-radius: var(--radius-kartu);">
+      <div style="display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap;">
+        <?php if ($hal > 1): ?>
+          <a href="<?= h($buat_url_hal_user($hal - 1)) ?>" class="pagination-nav-btn" style="height: 34px; padding: 0 14px; font-size: 0.82rem;">← Sebelumnya</a>
+        <?php else: ?>
+          <span class="pagination-nav-btn disabled" style="height: 34px; padding: 0 14px; font-size: 0.82rem;">← Sebelumnya</span>
+        <?php endif; ?>
+
+        <?php if ($mulai_hal > 1): ?>
+          <a href="<?= h($buat_url_hal_user(1)) ?>" class="pagination-number-btn" style="width: 34px; height: 34px; font-size: 0.82rem;">1</a>
+          <?php if ($mulai_hal > 2): ?>
+            <span class="pagination-ellipsis" style="width: 18px; font-size: 0.82rem;">&hellip;</span>
+          <?php endif; ?>
+        <?php endif; ?>
+
+        <?php for ($i = $mulai_hal; $i <= $akhir_hal; $i++): ?>
+          <?php if ($i === $hal): ?>
+            <span class="pagination-number-btn aktif" style="width: 34px; height: 34px; font-size: 0.82rem;"><?= $i ?></span>
+          <?php else: ?>
+            <a href="<?= h($buat_url_hal_user($i)) ?>" class="pagination-number-btn" style="width: 34px; height: 34px; font-size: 0.82rem;"><?= $i ?></a>
+          <?php endif; ?>
+        <?php endfor; ?>
+
+        <?php if ($akhir_hal < $total_hal): ?>
+          <?php if ($akhir_hal < $total_hal - 1): ?>
+            <span class="pagination-ellipsis" style="width: 18px; font-size: 0.82rem;">&hellip;</span>
+          <?php endif; ?>
+          <a href="<?= h($buat_url_hal_user($total_hal)) ?>" class="pagination-number-btn" style="width: 34px; height: 34px; font-size: 0.82rem;"><?= $total_hal ?></a>
+        <?php endif; ?>
+
+        <?php if ($hal < $total_hal): ?>
+          <a href="<?= h($buat_url_hal_user($hal + 1)) ?>" class="pagination-nav-btn" style="height: 34px; padding: 0 14px; font-size: 0.82rem;">Selanjutnya →</a>
+        <?php else: ?>
+          <span class="pagination-nav-btn disabled" style="height: 34px; padding: 0 14px; font-size: 0.82rem;">Selanjutnya →</span>
+        <?php endif; ?>
+      </div>
+
+      <span class="teks-redup" style="font-size: 0.8rem;">
+        Halaman <b><?= $hal ?></b> dari <b><?= $total_hal ?></b> &middot; Menampilkan pengguna <b><?= $mulai_baris ?> - <?= $akhir_baris ?></b> dari total <b><?= number_format($total_pengguna, 0, ',', '.') ?></b> akun
+      </span>
+    </div>
+  <?php endif; ?>
+</div>
 
 <!-- FORM TERSEMBUNYI UNTUK PROSES RESET PASSWORD VIA PROMPT -->
 <form id="form-reset-pass" method="post" action="<?= base_url('admin/pengguna.php') ?>" style="display: none;">
@@ -389,7 +482,7 @@ include BASE_DIR . 'includes/header.php';
 
 <!-- MODAL TAMBAH USER BARU -->
 <div id="modal-tambah-user" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:200; align-items:center; justify-content:center; padding:20px;">
-  <div style="background:var(--permukaan); border-radius:var(--radius-kartu); padding:28px; max-width:480px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+  <div style="background:#FFFFFF !important; border:1px solid var(--garis); border-radius:var(--radius-kartu); padding:28px; max-width:480px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.2);">
     <h3 style="margin:0 0 6px; font-size:1.2rem; font-weight:800; color:var(--gelap);">Tambah Pengguna Baru</h3>
     <p class="teks-redup" style="margin:0 0 18px; font-size:0.84rem;">Daftarkan akun baru ke sistem dengan role yang diinginkan.</p>
 
@@ -423,7 +516,7 @@ include BASE_DIR . 'includes/header.php';
 
 <!-- MODAL EDIT PROFIL USER -->
 <div id="modal-edit-user" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:200; align-items:center; justify-content:center; padding:20px;">
-  <div style="background:var(--permukaan); border-radius:var(--radius-kartu); padding:28px; max-width:480px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+  <div style="background:#FFFFFF !important; border:1px solid var(--garis); border-radius:var(--radius-kartu); padding:28px; max-width:480px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.2);">
     <h3 style="margin:0 0 6px; font-size:1.2rem; font-weight:800; color:var(--gelap);">Edit Profil Pengguna</h3>
     <p class="teks-redup" style="margin:0 0 18px; font-size:0.84rem;">Perbarui nama lengkap atau alamat email pengguna.</p>
 

@@ -321,14 +321,14 @@ input[type="number"] {
   justify-content: space-between;
   align-items: center;
   min-height: 56px;
-  gap: 20px;
+  gap: 16px;
 }
 
 .nav-isi-aplikasi {
   width: 100%;
-  max-width: 1280px;
-  padding-right: 24px;
-  padding-left: 24px;
+  max-width: 1400px;
+  padding-right: 28px;
+  padding-left: 28px;
   box-sizing: border-box;
 }
 
@@ -336,15 +336,16 @@ input[type="number"] {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: 36px;
 }
 
 .nav-desktop-links .nav-link-item {
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
   font-size: 0.88rem;
   font-weight: 600;
-  padding: 9px 15px;
+  padding: 8px 14px;
   border-radius: var(--radius-pil);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
@@ -366,7 +367,8 @@ input[type="number"] {
 .nav-brand {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .logo {
@@ -374,11 +376,13 @@ input[type="number"] {
   align-items: center;
   gap: 8px;
   color: #FFFFFF;
-  font-size: 1.45rem;
+  font-size: 1.4rem;
   font-weight: 800;
   text-decoration: none;
   letter-spacing: -0.02em;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .logo:hover {
@@ -407,10 +411,13 @@ input[type="number"] {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  flex-shrink: 0 !important;
 }
 
 .logo-teks {
   color: #FFFFFF;
+  white-space: nowrap !important;
+  display: inline-block;
 }
 
 .logo-teks em {
@@ -421,7 +428,8 @@ input[type="number"] {
 .nav-menu {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .nav-menu a, .nav-tautan, .nav-link-subtle {
@@ -460,6 +468,155 @@ input[type="number"] {
   color: #FFFFFF !important;
   border: 1px solid rgba(255, 255, 255, 0.22) !important;
   box-shadow: none !important;
+}
+
+/* ==========================================================================
+   WORKSPACE ROLE SWITCHER (Admin Multi-Mode Dropdown)
+   ========================================================================== */
+.workspace-switcher-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.workspace-switcher-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+  padding: 6px 14px;
+  border-radius: var(--radius-pil);
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.workspace-switcher-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.workspace-switcher-ikon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.workspace-chevron {
+  transition: transform 0.2s ease;
+  margin-left: 2px;
+}
+
+.workspace-switcher-wrapper.buka .workspace-chevron {
+  transform: rotate(180deg);
+}
+
+.workspace-switcher-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 290px;
+  background: #FFFFFF !important;
+  border: 1px solid var(--garis);
+  border-radius: var(--radius-kartu);
+  box-shadow: 0 14px 35px rgba(24, 48, 36, 0.18);
+  padding: 8px;
+  z-index: 1000;
+  animation: dropdownFadeIn 0.18s ease-out;
+}
+
+.workspace-switcher-wrapper.buka .workspace-switcher-dropdown {
+  display: block;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.workspace-dropdown-header {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--abu);
+  padding: 8px 12px 6px;
+  border-bottom: 1px solid var(--latar);
+  margin-bottom: 6px;
+}
+
+.workspace-dropdown-item {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px !important;
+  border-radius: var(--radius-kecil);
+  text-decoration: none;
+  color: var(--gelap) !important;
+  transition: background 0.15s ease;
+}
+
+.workspace-dropdown-item:hover {
+  background: var(--latar) !important;
+  color: var(--gelap) !important;
+  transform: none !important;
+}
+
+.workspace-dropdown-item.aktif {
+  background: #F0FDF4 !important;
+}
+
+.workspace-item-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--latar);
+  color: var(--hijau);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.workspace-dropdown-item.aktif .workspace-item-icon {
+  background: var(--mint);
+  color: #1E4032;
+}
+
+.workspace-item-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.workspace-item-text strong {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--gelap);
+  line-height: 1.25;
+}
+
+.workspace-item-text span {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--teks-redup);
+  margin-top: 2px;
+  line-height: 1.2;
+}
+
+.workspace-check {
+  color: var(--hijau);
+  flex-shrink: 0;
 }
 
 .navbar .tombol-keluar:hover {
@@ -2114,6 +2271,13 @@ input[type="checkbox"] {
   letter-spacing: 0.04em;
 }
 
+.admin-table tbody tr {
+  transition: background 0.15s ease;
+}
+.admin-table tbody tr:hover {
+  background: #F9FAF8;
+}
+
 .badge-role {
   display: inline-flex;
   align-items: center;
@@ -2264,17 +2428,18 @@ input[type="checkbox"] {
 /* ==========================================================================
    RESPONSIVE ADAPTATIONS
    ========================================================================== */
-@media (max-width: 1120px) {
+@media (max-width: 1200px) {
   .nav-desktop-links {
-    gap: 4px;
+    gap: 3px;
+    margin-right: 20px;
   }
   .nav-desktop-links .nav-link-item {
-    padding: 8px 11px;
-    font-size: 0.85rem;
+    padding: 7px 10px;
+    font-size: 0.82rem;
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1040px) {
   .nav-desktop-links {
     display: none !important;
   }
@@ -3595,7 +3760,11 @@ body.halaman-dashboard .menu-kartu,
 body.halaman-dashboard .hasil,
 body.halaman-dashboard .kosong,
 body.halaman-dashboard .rencana-card,
-body.halaman-dashboard .profil-header {
+body.halaman-dashboard .profil-header,
+body.halaman-dashboard .admin-stat-card,
+body.halaman-dashboard .admin-subnav-toolbar,
+body.halaman-dashboard .kartu-pakar,
+body.halaman-dashboard .modal-box {
   background: #FFFFFF !important;
   opacity: 1 !important;
   border: 1px solid var(--garis);
@@ -3959,4 +4128,15 @@ body.halaman-dashboard footer {
   font-weight: 600;
   color: var(--teks-redup);
 }
+
+/* ── Admin Makanan Table Enhancements ── */
+.admin-table-container {
+  background: #FFFFFF !important;
+  border: 1px solid var(--garis);
+  border-radius: var(--radius-kartu);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  overflow-x: auto;
+}
+
+
 
